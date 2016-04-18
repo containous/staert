@@ -59,11 +59,9 @@ func TestFleagSource(t *testing.T) {
 	}
 
 	//Test
-	var s Staert
-	s.New(&config, &defaultStructPtr)
-	var fs FlaegSource
-	fs.AddArgs(args)
-	s.Add(&fs)
+	s := NewStaert(&config, &defaultStructPtr)
+	fs := NewFlaegSource(args, nil)
+	s.Add(fs)
 	result, err := s.GetConfig()
 	if err != nil {
 		t.Errorf("Error %s", err.Error())
@@ -87,6 +85,62 @@ func TestFleagSource(t *testing.T) {
 	if resultStructPtr, ok := result.(*StructPtr); ok {
 		if !reflect.DeepEqual(*resultStructPtr, check) {
 			t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, *resultStructPtr)
+		}
+	}
+}
+
+func TestTomlSource(t *testing.T) {
+	//Init
+	defaultStructPtr := StructPtr{
+		PtrStruct1: &Struct1{
+			1000,
+			"S1StringDefault",
+			true,
+		},
+		PtrStruct2: &Struct2{
+			2000,
+			"S2StringDefault",
+			false,
+		},
+		DurationField: time.Second * 5,
+	}
+	config := StructPtr{
+		PtrStruct1: &Struct1{
+			3,
+			"S1StringNonDefault",
+			false,
+		},
+		PtrStruct2: nil,
+	}
+
+	//Test
+	s := NewStaert(&config, &defaultStructPtr)
+	ts := NewTomlSource("test", []string{".", "$HOME"})
+	s.Add(ts)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+	// fmt.Printf("%+v\n", result)
+
+	//Check
+	check := StructPtr{
+		PtrStruct1: &Struct1{
+			1111,
+			"S1StringNonDefault",
+			false,
+		},
+		PtrStruct2: &Struct2{
+			2222,
+			"S2StringToml",
+			true,
+		},
+		DurationField: time.Second * 9,
+	}
+
+	if resultStructPtr, ok := result.(*StructPtr); ok {
+		if !reflect.DeepEqual(*resultStructPtr, check) {
+			t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
 		}
 	}
 }
