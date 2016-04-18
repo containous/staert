@@ -1,7 +1,10 @@
 package staert
 
 import (
+	"fmt"
+	"github.com/BurntSushi/toml"
 	"github.com/cocap10/flaeg"
+	"os"
 	"reflect"
 )
 
@@ -17,17 +20,17 @@ type Source interface {
 	Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error)
 }
 
-// New creats and return a pointer on Staert. Need defaultConfig and defaultPointersConfig given by references
-func (s *Staert) New(defaultConfig interface{}, defaultPointersConfig interface{}) *Staert {
+// NewStaert creats and return a pointer on Staert. Need defaultConfig and defaultPointersConfig given by references
+func NewStaert(defaultConfig interface{}, defaultPointersConfig interface{}) *Staert {
+	s := Staert{}
 	s.DefaultPointersConfig = defaultPointersConfig
 	s.Config = defaultConfig
-	return s
+	return &s
 }
 
 // Add new Source to Staert, give it by reference
-func (s *Staert) Add(src Source) error {
+func (s *Staert) Add(src Source) {
 	s.Sources = append(s.Sources, src)
-	return nil
 
 }
 
@@ -46,23 +49,53 @@ func (s *Staert) GetConfig() (interface{}, error) {
 
 //FlaegSource impement Source
 type FlaegSource struct {
-	customParsers map[reflect.Type]flaeg.Parser
 	args          []string
+	customParsers map[reflect.Type]flaeg.Parser
 }
 
-// AddParsers adds custom parsers, used in Flaeg
-func (fs *FlaegSource) AddParsers(customParsers map[reflect.Type]flaeg.Parser) {
-	fs.customParsers = customParsers
-}
-
-// AddArgs adds custom parsers, used in Flaeg
-func (fs *FlaegSource) AddArgs(args []string) {
-	fs.args = args
+// NewFlaegSource creats and return a pointer on FlaegSource. Need args in a slice of string. customParsers should be nil if none
+func NewFlaegSource(args []string, customParsers map[reflect.Type]flaeg.Parser) *FlaegSource {
+	return &FlaegSource{args, customParsers}
 }
 
 // Parse calls Flaeg Load Function
 func (fs *FlaegSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
 	if err := flaeg.LoadWithParsers(sourceConfig, defaultPointersConfig, fs.args, fs.customParsers); err != nil {
+		return nil, err
+	}
+	return sourceConfig, nil
+}
+
+//TomlSource impement Source
+type TomlSource struct {
+	name        string
+	directories []string
+	file        string
+}
+
+// NewTomlSource creats and return a pointer on TomlSource. Need file name (without path and extension type) and directories paths+
+func NewTomlSource(name string, directories []string) *TomlSource {
+	//TODO trim path /, VAR ENV
+	return &TomlSource{name, directories, ""}
+}
+
+func (ts *TomlSource) findFile() error {
+	for _, dir := range ts.directories {
+		file := dir + "/" + ts.name + ".toml"
+		if _, err := os.Stat(file); err == nil {
+			ts.file = file
+			return nil
+		}
+	}
+	return fmt.Errorf("No file %s.toml found in directories %+v", ts.name, ts.directories)
+}
+
+// Parse calls Flaeg Load Function
+func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
+	if err := ts.findFile(); err != nil {
+		return nil, err
+	}
+	if _, err := toml.DecodeFile(ts.file, sourceConfig); err != nil {
 		return nil, err
 	}
 	return sourceConfig, nil

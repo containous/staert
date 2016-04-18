@@ -1,0 +1,12 @@
+# This is a TOML document. Boom.
+DurationField= 9000000000#nm
+[PtrStruct1]
+S1Int= 1111
+# S1String=  "S1StringToml"
+#  S1Bool=true
+
+[PtrStruct2]
+S2Int64 = 2222
+S2String="S2StringToml"
+S2Bool =true
+
