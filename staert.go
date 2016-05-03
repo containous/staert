@@ -3,7 +3,7 @@ package staert
 import (
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"github.com/cocap10/flaeg"
+	"github.com/containous/flaeg"
 	"os"
 	"reflect"
 )
@@ -34,7 +34,8 @@ func (s *Staert) Add(src Source) {
 
 }
 
-// GetConfig new Source to Staert
+// GetConfig run sources Parse func in the raw
+// it retrurns a reference on the parsed config
 func (s *Staert) GetConfig() (interface{}, error) {
 
 	for _, src := range s.Sources {
@@ -92,6 +93,7 @@ func (ts *TomlSource) findFile() error {
 
 // Parse calls Flaeg Load Function
 func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
+	//TODO : use defaultPointersConfig
 	if err := ts.findFile(); err != nil {
 		return nil, err
 	}
