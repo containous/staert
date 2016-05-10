@@ -10,11 +10,23 @@ import (
 	"strings"
 )
 
+// Command structure contains program/command information (command name and description)
+// config must be a pointer on the configuration struct to parse (it contains default values of field)
+// defaultPointersConfig contains default pointers values: those values are set on pointers fields if their flags are called
+// It must be the same type(struct) as config
+// Run is the func which launch the program using initialized configuration structure
+type Command struct {
+	Name                  string
+	Description           string
+	Run                   func(InitalizedConfig interface{}) error
+	sources               []Source
+	defaultPointersConfig interface{}
+	config                interface{}
+}
+
 // Staert contains the struct to configure, thee default values inside structs and the sources
 type Staert struct {
-	DefaultPointersConfig interface{}
-	Config                interface{}
-	Sources               []Source
+	commands []*Command
 }
 
 // Source interface must be satisfy to Add any kink of Source to Staert as like as TomlFile or Flaeg
@@ -25,14 +37,14 @@ type Source interface {
 // NewStaert creats and return a pointer on Staert. Need defaultConfig and defaultPointersConfig given by references
 func NewStaert(defaultConfig interface{}, defaultPointersConfig interface{}) *Staert {
 	s := Staert{}
-	s.DefaultPointersConfig = defaultPointersConfig
-	s.Config = defaultConfig
+	s.defaultPointersConfig = defaultPointersConfig
+	s.config = defaultConfig
 	return &s
 }
 
 // Add new Source to Staert, give it by reference
 func (s *Staert) Add(src Source) {
-	s.Sources = append(s.Sources, src)
+	s.sources = append(s.sources, src)
 
 }
 
@@ -40,14 +52,14 @@ func (s *Staert) Add(src Source) {
 // it retrurns a reference on the parsed config
 func (s *Staert) GetConfig() (interface{}, error) {
 
-	for _, src := range s.Sources {
+	for _, src := range s.sources {
 		var err error
-		s.Config, err = src.Parse(s.Config, s.DefaultPointersConfig)
+		s.config, err = src.Parse(s.config, s.defaultPointersConfig)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return s.Config, nil
+	return s.config, nil
 }
 
 //FlaegSource impement Source
