@@ -35,8 +35,10 @@ type Source interface {
 }
 
 // NewStaert creats and return a pointer on Staert. Need defaultConfig and defaultPointersConfig given by references
-func NewStaert(defaultConfig interface{}, defaultPointersConfig interface{}) *Staert {
-	s := Staert{}
+func NewStaert(rootCommand *Command) *Staert {
+	s := Staert{
+		commands: []*Command{rootCommand},
+	}
 	s.defaultPointersConfig = defaultPointersConfig
 	s.config = defaultConfig
 	return &s
