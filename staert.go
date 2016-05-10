@@ -104,7 +104,6 @@ func (ts *TomlSource) findFile() error {
 
 // Parse calls Flaeg Load Function
 func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
-	//WIP : use defaultPointersConfig
 	if err := ts.findFile(); err != nil {
 		return nil, err
 	}
