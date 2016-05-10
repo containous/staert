@@ -1,6 +1,7 @@
 package staert
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -13,7 +14,7 @@ type StructPtr struct {
 	DurationField time.Duration `description:"Duration Field"`
 }
 
-//Struct1 : trivial Struct
+//Struct1 : Struct with pointer
 type Struct1 struct {
 	S1Int        int      `description:"Struct 1 Int"`
 	S1String     string   `description:"Struct 1 String"`
@@ -30,7 +31,7 @@ type Struct2 struct {
 
 //Struct3 : trivial Struct
 type Struct3 struct {
-	S2Float64 float64 `description:"Struct 3 float64"`
+	S3Float64 float64 `description:"Struct 3 float64"`
 }
 
 func TestFleagSourceNoArgs(t *testing.T) {
@@ -48,7 +49,7 @@ func TestFleagSourceNoArgs(t *testing.T) {
 			S1String: "S1StringDefaultPointersConfig",
 			S1Bool:   true,
 			S1PtrStruct3: &Struct3{
-				S2Float64: 11.11,
+				S3Float64: 11.11,
 			},
 		},
 		PtrStruct2: &Struct2{
@@ -88,7 +89,7 @@ func TestFleagSourceNoArgs(t *testing.T) {
 
 }
 
-func TestFleagSourcePtrArgs(t *testing.T) {
+func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -103,7 +104,7 @@ func TestFleagSourcePtrArgs(t *testing.T) {
 			S1String: "S1StringDefaultPointersConfig",
 			S1Bool:   true,
 			S1PtrStruct3: &Struct3{
-				S2Float64: 11.11,
+				S3Float64: 11.11,
 			},
 		},
 		PtrStruct2: &Struct2{
@@ -113,8 +114,7 @@ func TestFleagSourcePtrArgs(t *testing.T) {
 		},
 	}
 	args := []string{
-		"--ptrstruct1",
-		"--ptrstruct2",
+		"--ptrstruct1.s1ptrstruct3",
 	}
 
 	//Test
@@ -128,15 +128,11 @@ func TestFleagSourcePtrArgs(t *testing.T) {
 	//Check
 	check := &StructPtr{
 		PtrStruct1: &Struct1{
-			S1Int:        11,
-			S1String:     "S1StringDefaultPointersConfig",
-			S1Bool:       true, //Wait for Flaeg ISSUE6
-			S1PtrStruct3: nil,
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
 		},
 		DurationField: time.Second,
 	}
@@ -148,6 +144,229 @@ func TestFleagSourcePtrArgs(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(resultStructPtr, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	}
+}
+
+func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+	args := []string{
+		"--ptrstruct1.s1ptrstruct3.s3float64=55.55",
+	}
+
+	//Test
+	s := NewStaert(config, defaultPointersConfig)
+	fs := NewFlaegSource(args, nil)
+	s.Add(fs)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{
+				S3Float64: 55.55,
+			},
+		},
+		DurationField: time.Second,
+	}
+
+	//Type assertions
+	resultStructPtr, ok := result.(*StructPtr)
+	if !ok {
+		t.Fatalf("Cannot convert the result into StructPtr")
+	}
+
+	if !reflect.DeepEqual(resultStructPtr, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	}
+}
+
+func TestTomlSourceNothing(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	//Test
+	s := NewStaert(config, defaultPointersConfig)
+	toml := NewTomlSource("nothing", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
+	s.Add(toml)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+
+	//Type assertions
+	resultStructPtr, ok := result.(*StructPtr)
+	if !ok {
+		t.Fatalf("Cannot convert the result into StructPtr")
+	}
+
+	if !reflect.DeepEqual(resultStructPtr, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	}
+}
+
+func TestTomlSourceTrivial(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	//Test
+	s := NewStaert(config, defaultPointersConfig)
+	toml := NewTomlSource("trivial", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
+	s.Add(toml)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    28,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: 28 * time.Nanosecond,
+	}
+
+	//Type assertions
+	resultStructPtr, ok := result.(*StructPtr)
+	if !ok {
+		t.Fatalf("Cannot convert the result into StructPtr")
+	}
+
+	if !reflect.DeepEqual(resultStructPtr, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	}
+}
+
+func TestTomlSourcePointerUnderPointer(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	//Test
+	s := NewStaert(config, defaultPointersConfig)
+	toml := NewTomlSource("pointerUnderPointer", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
+	s.Add(toml)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		DurationField: time.Second,
+	}
+
+	//Type assertions
+	resultStructPtr, ok := result.(*StructPtr)
+	if !ok {
+		t.Fatalf("Cannot convert the result into StructPtr")
+	}
+
+	if !reflect.DeepEqual(resultStructPtr, check) {
+		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
+		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
 		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
 	}
 }

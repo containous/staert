@@ -5,7 +5,9 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/containous/flaeg"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 // Staert contains the struct to configure, thee default values inside structs and the sources
@@ -69,35 +71,58 @@ func (fs *FlaegSource) Parse(sourceConfig interface{}, defaultPointersConfig int
 
 //TomlSource impement Source
 type TomlSource struct {
-	name        string
+	filename    string
 	directories []string
-	file        string
+	fullpath    string
 }
 
-// NewTomlSource creats and return a pointer on TomlSource. Need file name (without path and extension type) and directories paths+
-func NewTomlSource(name string, directories []string) *TomlSource {
+// NewTomlSource creats and return a pointer on TomlSource. Parameter filename is the name of the file without neither fullpath not extension type and directories is a slice of paths
+// (staert look for the toml file from the first directory to last one)
+func NewTomlSource(filename string, directories []string) *TomlSource {
 	//TODO trim path /, VAR ENV
-	return &TomlSource{name, directories, ""}
+	return &TomlSource{filename, directories, ""}
 }
 
 func (ts *TomlSource) findFile() error {
 	for _, dir := range ts.directories {
-		file := dir + "/" + ts.name + ".toml"
-		if _, err := os.Stat(file); err == nil {
-			ts.file = file
+		fullpath := string(dir[:len(dir)-1]) + strings.Trim(dir[len(dir)-1:], "/") + "/" + ts.filename + ".toml"
+		// fmt.Printf("Lookup fullpath %s\n", fullpath)
+		// Test if the file exits
+		if _, err := os.Stat(fullpath); err == nil {
+			//Turn fullpath in absolute representation of path
+			fullpath, err = filepath.Abs(fullpath)
+			if err != nil {
+				return err
+			}
+			// fmt.Printf("File in fullpath %s exists\n", fullpath)
+			ts.fullpath = fullpath
 			return nil
 		}
 	}
-	return fmt.Errorf("No file %s.toml found in directories %+v", ts.name, ts.directories)
+	return fmt.Errorf("No file %s.toml found in directories %+v", ts.filename, ts.directories)
 }
 
 // Parse calls Flaeg Load Function
 func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
-	//TODO : use defaultPointersConfig
+	//WIP : use defaultPointersConfig
 	if err := ts.findFile(); err != nil {
 		return nil, err
 	}
-	if _, err := toml.DecodeFile(ts.file, sourceConfig); err != nil {
+	metadata, err := toml.DecodeFile(ts.fullpath, sourceConfig)
+	if err != nil {
+		return nil, err
+	}
+	flaegArgs := []string{}
+	for _, key := range metadata.Keys() {
+		if metadata.Type(key.String()) == "Hash" {
+			//Ptr case
+			flaegArgs = append(flaegArgs, "--"+strings.ToLower(key.String()))
+		}
+	}
+	fmt.Println(flaegArgs)
+	f := NewFlaegSource(flaegArgs, nil) //FIX ME : add custom parsers here
+	sourceConfig, err = f.Parse(sourceConfig, defaultPointersConfig)
+	if err != nil {
 		return nil, err
 	}
 	return sourceConfig, nil
