@@ -309,6 +309,68 @@ func TestTomlSourceTrivial(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(resultStructPtr, check) {
+		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
+		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	}
+}
+
+func TestTomlSourcePointer(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	//Test
+	s := NewStaert(config, defaultPointersConfig)
+	toml := NewTomlSource("pointer", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
+	s.Add(toml)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+		DurationField: time.Second,
+	}
+
+	//Type assertions
+	resultStructPtr, ok := result.(*StructPtr)
+	if !ok {
+		t.Fatalf("Cannot convert the result into StructPtr")
+	}
+
+	if !reflect.DeepEqual(resultStructPtr, check) {
+		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
+		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
 		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
 	}
 }
