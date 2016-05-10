@@ -740,3 +740,189 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 	}
 
 }
+
+func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	args := []string{}
+
+	//Test
+	s := NewStaert(config, defaultPointersConfig)
+	fs := NewFlaegSource(args, nil)
+	s.Add(fs)
+	toml := NewTomlSource("nothing", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
+	s.Add(toml)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+
+	//Type assertions
+	resultStructPtr, ok := result.(*StructPtr)
+	if !ok {
+		t.Fatalf("Cannot convert the config into Configuration")
+	}
+	if !reflect.DeepEqual(resultStructPtr, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	}
+
+}
+
+func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	args := []string{
+		"--ptrstruct1.s1ptrstruct3.s3float64=55.55",
+	}
+	//Test
+	s := NewStaert(config, defaultPointersConfig)
+	fs := NewFlaegSource(args, nil)
+	s.Add(fs)
+	toml := NewTomlSource("nothing", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
+	s.Add(toml)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{
+				S3Float64: 55.55,
+			},
+		},
+		DurationField: time.Second,
+	}
+
+	//Type assertions
+	resultStructPtr, ok := result.(*StructPtr)
+	if !ok {
+		t.Fatalf("Cannot convert the config into Configuration")
+	}
+	if !reflect.DeepEqual(resultStructPtr, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	}
+
+}
+
+func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	args := []string{
+		"--ptrstruct1.s1int=55",
+		"--durationfield=55s",
+		"--ptrstruct2.s2string=S2StringFlaeg",
+	}
+	//Test
+	s := NewStaert(config, defaultPointersConfig)
+	fs := NewFlaegSource(args, nil)
+	s.Add(fs)
+	toml := NewTomlSource("trivial", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
+	s.Add(toml)
+	result, err := s.GetConfig()
+	if err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    28,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Nanosecond * 28,
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringFlaeg",
+			S2Bool:   false,
+		},
+	}
+
+	//Type assertions
+	resultStructPtr, ok := result.(*StructPtr)
+	if !ok {
+		t.Fatalf("Cannot convert the config into Configuration")
+	}
+	if !reflect.DeepEqual(resultStructPtr, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	}
+
+}
