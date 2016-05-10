@@ -113,13 +113,26 @@ func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig inte
 		return nil, err
 	}
 	flaegArgs := []string{}
-	for _, key := range metadata.Keys() {
+	keys := metadata.Keys()
+	for i, key := range keys {
+		// fmt.Println(key)
 		if metadata.Type(key.String()) == "Hash" {
 			//Ptr case
-			flaegArgs = append(flaegArgs, "--"+strings.ToLower(key.String()))
+			// fmt.Printf("%s is a ptr\n", key)
+			hasUnderField := false
+			for j := i; j < len(keys); j++ {
+				// fmt.Printf("%s =? %s\n", keys[j].String(), "."+key.String())
+				if strings.Contains(keys[j].String(), key.String()+".") {
+					hasUnderField = true
+					break
+				}
+			}
+			if !hasUnderField {
+				flaegArgs = append(flaegArgs, "--"+strings.ToLower(key.String()))
+			}
 		}
 	}
-	fmt.Println(flaegArgs)
+	// fmt.Println(flaegArgs)
 	f := NewFlaegSource(flaegArgs, nil) //FIX ME : add custom parsers here
 	sourceConfig, err = f.Parse(sourceConfig, defaultPointersConfig)
 	if err != nil {
