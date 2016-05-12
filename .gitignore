@@ -1,3 +1,4 @@
 .vscode
 debug.test
 coverage.out
+example*
