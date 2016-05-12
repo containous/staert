@@ -16,14 +16,14 @@ type Source interface {
 
 // Staert contains the struct to configure, thee default values inside structs and the sources
 type Staert struct {
-	commands []*flaeg.Command
-	sources  []Source
+	command *flaeg.Command
+	sources []Source
 }
 
 // NewStaert creats and return a pointer on Staert. Need defaultConfig and defaultPointersConfig given by references
 func NewStaert(rootCommand *flaeg.Command) *Staert {
 	s := Staert{
-		commands: []*flaeg.Command{rootCommand},
+		command: rootCommand,
 	}
 	return &s
 }
@@ -47,20 +47,21 @@ func (s *Staert) getConfig(cmd *flaeg.Command) error {
 
 // Run calls the Run func of the command with the parsed config
 func (s *Staert) Run() error {
-	cmd := s.commands[0]
+	cmd := s.command
 	for _, src := range s.sources {
 		//Type assertion
 		f, ok := src.(*flaeg.Flaeg)
 		if ok {
-			var err error
-			cmd, err = f.GetCommand()
-			if err != nil {
+			if fCmd, err := f.GetCommand(); err != nil {
 				return err
+			} else if cmd != fCmd {
+				if err := f.Run(); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}
-	//FIX ME : if subcmd, call only f.ParseCmd
-	//because staert doesn't support other sources on subcommand
 	if err := s.getConfig(cmd); err != nil {
 		return err
 	}

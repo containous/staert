@@ -1,9 +1,11 @@
 package staert
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/containous/flaeg"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -36,6 +38,8 @@ type Struct3 struct {
 }
 
 func TestFleagSourceNoArgs(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -68,7 +72,7 @@ func TestFleagSourceNoArgs(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -94,6 +98,8 @@ func TestFleagSourceNoArgs(t *testing.T) {
 }
 
 func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -128,7 +134,7 @@ func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -151,11 +157,18 @@ func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
+		result, ok := rootCmd.Config.(*StructPtr)
+		if ok {
+			fmt.Printf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, result.PtrStruct1)
+		}
+
 		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
 func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -190,7 +203,7 @@ func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -218,6 +231,8 @@ func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 }
 
 func TestTomlSourceNothing(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -249,7 +264,7 @@ func TestTomlSourceNothing(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -275,6 +290,8 @@ func TestTomlSourceNothing(t *testing.T) {
 }
 
 func TestTomlSourceTrivial(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -306,7 +323,7 @@ func TestTomlSourceTrivial(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -332,6 +349,8 @@ func TestTomlSourceTrivial(t *testing.T) {
 }
 
 func TestTomlSourcePointer(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -363,7 +382,7 @@ func TestTomlSourcePointer(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -394,6 +413,8 @@ func TestTomlSourcePointer(t *testing.T) {
 }
 
 func TestTomlSourcePointerUnderPointer(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -425,7 +446,7 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -454,6 +475,8 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 }
 
 func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -485,7 +508,7 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -514,6 +537,8 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 }
 
 func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -547,7 +572,7 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -576,6 +601,8 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 }
 
 func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -609,7 +636,7 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -641,6 +668,8 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 }
 
 func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -674,7 +703,7 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -702,6 +731,8 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 }
 
 func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -739,7 +770,7 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -775,6 +806,8 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 }
 
 func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -808,7 +841,7 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -837,6 +870,8 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 }
 
 func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -871,7 +906,7 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -903,6 +938,8 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 }
 
 func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -939,7 +976,7 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			return nil
 		},
 	}
@@ -972,13 +1009,9 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 
 }
 
-//Version Config
-type VersionConfig struct {
-	Version string `short:"v" description:"Version"`
-}
-
-//TODO
-func TestRunFleagFieldUnderPtrUnderPtr2Commands(t *testing.T) {
+func TestRunFleagFieldUnderPtrUnderPtr1Command(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
 	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1013,7 +1046,7 @@ func TestRunFleagFieldUnderPtrUnderPtr2Commands(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run with config :\n%+v\n", config)
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			check := &StructPtr{
 				PtrStruct1: &Struct1{
 					S1Int:    1,
@@ -1034,6 +1067,191 @@ func TestRunFleagFieldUnderPtrUnderPtr2Commands(t *testing.T) {
 	s := NewStaert(rootCmd)
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
+	if err := s.Run(); err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
+}
+
+//Version Config
+type VersionConfig struct {
+	Version string `short:"v" description:"Version"`
+}
+
+func TestRunFleagFieldUnderPtrUnderPtr2Command(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+	//init version config
+	versionConfig := &VersionConfig{"0.1"}
+
+	args := []string{
+		"--ptrstruct1.s1ptrstruct3.s3float64=55.55",
+	}
+
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
+			check := &StructPtr{
+				PtrStruct1: &Struct1{
+					S1Int:    1,
+					S1String: "S1StringInitConfig",
+					S1PtrStruct3: &Struct3{
+						S3Float64: 55.55,
+					},
+				},
+				DurationField: time.Second,
+			}
+
+			if !reflect.DeepEqual(config, check) {
+				return fmt.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
+			}
+			return nil
+		},
+	}
+	//vesion command
+	VersionCmd := &flaeg.Command{
+		Name:        "version",
+		Description: `Print version`,
+
+		Config:                versionConfig,
+		DefaultPointersConfig: versionConfig,
+		//test in run
+		Run: func() error {
+			fmt.Fprintf(&b, "Version %s \n", versionConfig.Version)
+			//CHECK
+			if versionConfig.Version != "0.1" {
+				return fmt.Errorf("expected 0.1 got %s", versionConfig.Version)
+			}
+			return nil
+
+		},
+	}
+	//TEST
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	fs.AddCommand(VersionCmd)
+	s.AddSource(fs)
+	//check in command run func
+	if err := s.Run(); err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
+	//check buffer
+	checkB := `Run with config`
+	if !strings.Contains(b.String(), checkB) {
+		t.Fatalf("Error output doesn't contain `Run with config`,\ngot: %s", &b)
+	}
+}
+
+func TestRunFleagVersion2Command(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+	//init version config
+	versionConfig := &VersionConfig{"0.1"}
+
+	args := []string{
+		"--toto",  //no effect
+		"version", //call Command
+		// "-v2.2beta",
+	}
+
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
+			check := &StructPtr{
+				PtrStruct1: &Struct1{
+					S1Int:    1,
+					S1String: "S1StringInitConfig",
+					S1PtrStruct3: &Struct3{
+						S3Float64: 55.55,
+					},
+				},
+				DurationField: time.Second,
+			}
+
+			if !reflect.DeepEqual(config, check) {
+				return fmt.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
+			}
+			return nil
+		},
+	}
+	//vesion command
+	VersionCmd := &flaeg.Command{
+		Name:        "version",
+		Description: `Print version`,
+
+		Config:                versionConfig,
+		DefaultPointersConfig: versionConfig,
+		//test in run
+		Run: func() error {
+			fmt.Fprintf(&b, "Version %s \n", versionConfig.Version)
+			//CHECK
+			if versionConfig.Version != "0.1" {
+				return fmt.Errorf("expected 0.1 got %s", versionConfig.Version)
+			}
+			return nil
+
+		},
+	}
+	//TEST
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	fs.AddCommand(VersionCmd)
+	s.AddSource(fs)
+	//check in command run func
 	if err := s.Run(); err != nil {
 		t.Fatalf("Error %s", err.Error())
 	}
