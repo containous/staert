@@ -2,6 +2,7 @@ package staert
 
 import (
 	"fmt"
+	"github.com/containous/flaeg"
 	"reflect"
 	"testing"
 	"time"
@@ -61,11 +62,20 @@ func TestFleagSourceNoArgs(t *testing.T) {
 	args := []string{}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
-	result, err := s.GetConfig()
-	if err != nil {
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 
@@ -78,15 +88,9 @@ func TestFleagSourceNoArgs(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the config into Configuration")
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
-	}
-
 }
 
 func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
@@ -118,11 +122,20 @@ func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
 	}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
-	result, err := s.GetConfig()
-	if err != nil {
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 	//Check
@@ -137,14 +150,8 @@ func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the result into StructPtr")
-	}
-
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -177,11 +184,20 @@ func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 	}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
-	result, err := s.GetConfig()
-	if err != nil {
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 	//Check
@@ -196,14 +212,8 @@ func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the result into StructPtr")
-	}
-
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -233,11 +243,21 @@ func TestTomlSourceNothing(t *testing.T) {
 	}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
 	toml := NewTomlSource("nothing", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 	//Check
@@ -249,14 +269,8 @@ func TestTomlSourceNothing(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the result into StructPtr")
-	}
-
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -286,11 +300,21 @@ func TestTomlSourceTrivial(t *testing.T) {
 	}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
 	toml := NewTomlSource("trivial", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 	//Check
@@ -302,16 +326,8 @@ func TestTomlSourceTrivial(t *testing.T) {
 		DurationField: 28 * time.Nanosecond,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the result into StructPtr")
-	}
-
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -341,11 +357,21 @@ func TestTomlSourcePointer(t *testing.T) {
 	}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
 	toml := NewTomlSource("pointer", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 	//Check
@@ -362,16 +388,8 @@ func TestTomlSourcePointer(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the result into StructPtr")
-	}
-
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -401,11 +419,21 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 	}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
 	toml := NewTomlSource("pointerUnderPointer", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 	//Check
@@ -420,16 +448,8 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the result into StructPtr")
-	}
-
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -459,11 +479,21 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 	}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
-	toml := NewTomlSource("fieldUnderPtrUnderPtr", []string{"/home/martin/go/src/github.com/containous/staert/toml", "./toml/"})
-	s.Add(toml)
-	result, err := s.GetConfig()
-	if err != nil {
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("fieldUnderPtrUnderPtr", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
+	s.AddSource(toml)
+
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 	//Check
@@ -478,16 +508,8 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the result into StructPtr")
-	}
-
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -519,13 +541,22 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 	args := []string{}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
 	toml := NewTomlSource("nothing", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 
@@ -538,13 +569,8 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the config into Configuration")
-	}
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -577,13 +603,22 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 	args := []string{}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
 	toml := NewTomlSource("fieldUnderPtrUnderPtr", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 
@@ -599,13 +634,8 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the config into Configuration")
-	}
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -638,16 +668,24 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 	args := []string{"--ptrstruct1.s1int=55"}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
 	toml := NewTomlSource("trivial", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
-
 	//Check
 	check := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -657,15 +695,8 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 		DurationField: 28 * time.Nanosecond,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the config into Configuration")
-	}
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -702,13 +733,22 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 	}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
 	toml := NewTomlSource("pointerUnderPointer", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 
@@ -728,15 +768,8 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 		},
 		DurationField: time.Second * 55,
 	}
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the config into Configuration")
-	}
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, resultStructPtr.PtrStruct1)
-		fmt.Printf("expected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct2, resultStructPtr.PtrStruct2)
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -769,13 +802,22 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 	args := []string{}
 
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
 	toml := NewTomlSource("nothing", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 
@@ -788,13 +830,8 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the config into Configuration")
-	}
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -828,13 +865,22 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 		"--ptrstruct1.s1ptrstruct3.s3float64=55.55",
 	}
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
 	toml := NewTomlSource("nothing", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 
@@ -850,13 +896,8 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 		DurationField: time.Second,
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the config into Configuration")
-	}
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -892,13 +933,22 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 		"--ptrstruct2.s2string=S2StringFlaeg",
 	}
 	//Test
-	s := NewStaert(config, defaultPointersConfig)
-	fs := NewFlaegSource(args, nil)
-	s.Add(fs)
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
 	toml := NewTomlSource("trivial", []string{"./toml/", "/home/martin/go/src/github.com/containous/staert/toml"})
-	s.Add(toml)
-	result, err := s.GetConfig()
-	if err != nil {
+	s.AddSource(toml)
+	if err := s.getConfig(rootCmd); err != nil {
 		t.Errorf("Error %s", err.Error())
 	}
 
@@ -916,13 +966,75 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 		},
 	}
 
-	//Type assertions
-	resultStructPtr, ok := result.(*StructPtr)
-	if !ok {
-		t.Fatalf("Cannot convert the config into Configuration")
-	}
-	if !reflect.DeepEqual(resultStructPtr, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, resultStructPtr)
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
+}
+
+//Version Config
+type VersionConfig struct {
+	Version string `short:"v" description:"Version"`
+}
+
+//TODO
+func TestRunFleagFieldUnderPtrUnderPtr2Commands(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+	args := []string{
+		"--ptrstruct1.s1ptrstruct3.s3float64=55.55",
+	}
+
+	//Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			check := &StructPtr{
+				PtrStruct1: &Struct1{
+					S1Int:    1,
+					S1String: "S1StringInitConfig",
+					S1PtrStruct3: &Struct3{
+						S3Float64: 55.55,
+					},
+				},
+				DurationField: time.Second,
+			}
+
+			if !reflect.DeepEqual(config, check) {
+				return fmt.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
+			}
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+	if err := s.Run(); err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
 }

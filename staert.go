@@ -6,81 +6,68 @@ import (
 	"github.com/containous/flaeg"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 )
 
-// Command structure contains program/command information (command name and description)
-// config must be a pointer on the configuration struct to parse (it contains default values of field)
-// defaultPointersConfig contains default pointers values: those values are set on pointers fields if their flags are called
-// It must be the same type(struct) as config
-// Run is the func which launch the program using initialized configuration structure
-type Command struct {
-	Name                  string
-	Description           string
-	Run                   func(InitalizedConfig interface{}) error
-	sources               []Source
-	defaultPointersConfig interface{}
-	config                interface{}
+// Source interface must be satisfy to Add any kink of Source to Staert as like as TomlFile or Flaeg
+type Source interface {
+	Parse(cmd *flaeg.Command) (*flaeg.Command, error)
 }
 
 // Staert contains the struct to configure, thee default values inside structs and the sources
 type Staert struct {
-	commands []*Command
-}
-
-// Source interface must be satisfy to Add any kink of Source to Staert as like as TomlFile or Flaeg
-type Source interface {
-	Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error)
+	commands []*flaeg.Command
+	sources  []Source
 }
 
 // NewStaert creats and return a pointer on Staert. Need defaultConfig and defaultPointersConfig given by references
-func NewStaert(rootCommand *Command) *Staert {
+func NewStaert(rootCommand *flaeg.Command) *Staert {
 	s := Staert{
-		commands: []*Command{rootCommand},
+		commands: []*flaeg.Command{rootCommand},
 	}
-	s.defaultPointersConfig = defaultPointersConfig
-	s.config = defaultConfig
 	return &s
 }
 
-// Add new Source to Staert, give it by reference
-func (s *Staert) Add(src Source) {
+// AddSource adds new Source to Staert, give it by reference
+func (s *Staert) AddSource(src Source) {
 	s.sources = append(s.sources, src)
-
 }
 
-// GetConfig run sources Parse func in the raw
-// it retrurns a reference on the parsed config
-func (s *Staert) GetConfig() (interface{}, error) {
-
+// getConfig for a flaeg.Command run sources Parse func in the raw
+func (s *Staert) getConfig(cmd *flaeg.Command) error {
 	for _, src := range s.sources {
 		var err error
-		s.config, err = src.Parse(s.config, s.defaultPointersConfig)
+		_, err = src.Parse(cmd)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return s.config, nil
+	return nil
 }
 
-//FlaegSource impement Source
-type FlaegSource struct {
-	args          []string
-	customParsers map[reflect.Type]flaeg.Parser
-}
-
-// NewFlaegSource creats and return a pointer on FlaegSource. Need args in a slice of string. customParsers should be nil if none
-func NewFlaegSource(args []string, customParsers map[reflect.Type]flaeg.Parser) *FlaegSource {
-	return &FlaegSource{args, customParsers}
-}
-
-// Parse calls Flaeg Load Function
-func (fs *FlaegSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
-	if err := flaeg.LoadWithParsers(sourceConfig, defaultPointersConfig, fs.args, fs.customParsers); err != nil {
-		return nil, err
+// Run calls the Run func of the command with the parsed config
+func (s *Staert) Run() error {
+	cmd := s.commands[0]
+	for _, src := range s.sources {
+		//Type assertion
+		f, ok := src.(*flaeg.Flaeg)
+		if ok {
+			var err error
+			cmd, err = f.GetCommand()
+			if err != nil {
+				return err
+			}
+		}
 	}
-	return sourceConfig, nil
+	//FIX ME : if subcmd, call only f.ParseCmd
+	//because staert doesn't support other sources on subcommand
+	if err := s.getConfig(cmd); err != nil {
+		return err
+	}
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
 }
 
 //TomlSource impement Source
@@ -117,11 +104,11 @@ func (ts *TomlSource) findFile() error {
 }
 
 // Parse calls Flaeg Load Function
-func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
+func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if err := ts.findFile(); err != nil {
 		return nil, err
 	}
-	metadata, err := toml.DecodeFile(ts.fullpath, sourceConfig)
+	metadata, err := toml.DecodeFile(ts.fullpath, cmd.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -146,10 +133,10 @@ func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig inte
 		}
 	}
 	// fmt.Println(flaegArgs)
-	f := NewFlaegSource(flaegArgs, nil) //FIX ME : add custom parsers here
-	sourceConfig, err = f.Parse(sourceConfig, defaultPointersConfig)
+	f := flaeg.New(cmd, flaegArgs)
+	cmd, err = f.Parse(cmd)
 	if err != nil {
 		return nil, err
 	}
-	return sourceConfig, nil
+	return cmd, nil
 }
