@@ -6,67 +6,69 @@ import (
 	"github.com/containous/flaeg"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 )
 
-// Staert contains the struct to configure, thee default values inside structs and the sources
-type Staert struct {
-	DefaultPointersConfig interface{}
-	Config                interface{}
-	Sources               []Source
-}
-
 // Source interface must be satisfy to Add any kink of Source to Staert as like as TomlFile or Flaeg
 type Source interface {
-	Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error)
+	Parse(cmd *flaeg.Command) (*flaeg.Command, error)
+}
+
+// Staert contains the struct to configure, thee default values inside structs and the sources
+type Staert struct {
+	command *flaeg.Command
+	sources []Source
 }
 
 // NewStaert creats and return a pointer on Staert. Need defaultConfig and defaultPointersConfig given by references
-func NewStaert(defaultConfig interface{}, defaultPointersConfig interface{}) *Staert {
-	s := Staert{}
-	s.DefaultPointersConfig = defaultPointersConfig
-	s.Config = defaultConfig
+func NewStaert(rootCommand *flaeg.Command) *Staert {
+	s := Staert{
+		command: rootCommand,
+	}
 	return &s
 }
 
-// Add new Source to Staert, give it by reference
-func (s *Staert) Add(src Source) {
-	s.Sources = append(s.Sources, src)
-
+// AddSource adds new Source to Staert, give it by reference
+func (s *Staert) AddSource(src Source) {
+	s.sources = append(s.sources, src)
 }
 
-// GetConfig run sources Parse func in the raw
-// it retrurns a reference on the parsed config
-func (s *Staert) GetConfig() (interface{}, error) {
-
-	for _, src := range s.Sources {
+// getConfig for a flaeg.Command run sources Parse func in the raw
+func (s *Staert) getConfig(cmd *flaeg.Command) error {
+	for _, src := range s.sources {
 		var err error
-		s.Config, err = src.Parse(s.Config, s.DefaultPointersConfig)
+		_, err = src.Parse(cmd)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return s.Config, nil
+	return nil
 }
 
-//FlaegSource impement Source
-type FlaegSource struct {
-	args          []string
-	customParsers map[reflect.Type]flaeg.Parser
-}
-
-// NewFlaegSource creats and return a pointer on FlaegSource. Need args in a slice of string. customParsers should be nil if none
-func NewFlaegSource(args []string, customParsers map[reflect.Type]flaeg.Parser) *FlaegSource {
-	return &FlaegSource{args, customParsers}
-}
-
-// Parse calls Flaeg Load Function
-func (fs *FlaegSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
-	if err := flaeg.LoadWithParsers(sourceConfig, defaultPointersConfig, fs.args, fs.customParsers); err != nil {
-		return nil, err
+// Run calls the Run func of the command with the parsed config
+func (s *Staert) Run() error {
+	cmd := s.command
+	for _, src := range s.sources {
+		//Type assertion
+		f, ok := src.(*flaeg.Flaeg)
+		if ok {
+			if fCmd, err := f.GetCommand(); err != nil {
+				return err
+			} else if cmd != fCmd {
+				if err := f.Run(); err != nil {
+					return err
+				}
+				return nil
+			}
+		}
 	}
-	return sourceConfig, nil
+	if err := s.getConfig(cmd); err != nil {
+		return err
+	}
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
 }
 
 //TomlSource impement Source
@@ -103,11 +105,11 @@ func (ts *TomlSource) findFile() error {
 }
 
 // Parse calls Flaeg Load Function
-func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig interface{}) (interface{}, error) {
+func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if err := ts.findFile(); err != nil {
 		return nil, err
 	}
-	metadata, err := toml.DecodeFile(ts.fullpath, sourceConfig)
+	metadata, err := toml.DecodeFile(ts.fullpath, cmd.Config)
 	if err != nil {
 		return nil, err
 	}
@@ -132,10 +134,10 @@ func (ts *TomlSource) Parse(sourceConfig interface{}, defaultPointersConfig inte
 		}
 	}
 	// fmt.Println(flaegArgs)
-	f := NewFlaegSource(flaegArgs, nil) //FIX ME : add custom parsers here
-	sourceConfig, err = f.Parse(sourceConfig, defaultPointersConfig)
+	f := flaeg.New(cmd, flaegArgs)
+	cmd, err = f.Parse(cmd)
 	if err != nil {
 		return nil, err
 	}
-	return sourceConfig, nil
+	return cmd, nil
 }
