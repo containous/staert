@@ -1365,3 +1365,52 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 	}
 
 }
+
+func TestTomlSourceErrorFileNotFound(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	//Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("nothing", []string{"../path", "/any/other/path"})
+	s.AddSource(toml)
+
+	//Check
+	if err := s.getConfig(rootCmd); err == nil || !strings.Contains(err.Error(), "No file nothing.toml found in directories [../path /any/other/path]") {
+		t.Errorf("Expected Error : help requested \nGot Error : %s", err)
+	}
+
+}
