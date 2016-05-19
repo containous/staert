@@ -81,24 +81,40 @@ type TomlSource struct {
 // NewTomlSource creats and return a pointer on TomlSource. Parameter filename is the name of the file without neither fullpath not extension type and directories is a slice of paths
 // (staert look for the toml file from the first directory to last one)
 func NewTomlSource(filename string, directories []string) *TomlSource {
-	//TODO trim path /, VAR ENV
 	return &TomlSource{filename, directories, ""}
 }
 
+func preprocessDir(dirIn string) (string, error) {
+	dirOut := dirIn
+	if strings.HasPrefix(dirIn, "$") {
+		end := strings.Index(dirIn, string(os.PathSeparator))
+		if end == -1 {
+			end = len(dirIn)
+		}
+		dirOut = os.Getenv(dirIn[1:end]) + dirIn[end:]
+
+	}
+	dirOut, err := filepath.Abs(dirOut)
+	return dirOut, err
+}
+
 func (ts *TomlSource) findFile() error {
-	for _, dir := range ts.directories {
-		fullpath := string(dir[:len(dir)-1]) + strings.Trim(dir[len(dir)-1:], "/") + "/" + ts.filename + ".toml"
-		// fmt.Printf("Lookup fullpath %s\n", fullpath)
-		// Test if the file exits
-		if _, err := os.Stat(fullpath); err == nil {
-			//Turn fullpath in absolute representation of path
-			fullpath, err = filepath.Abs(fullpath)
+	for _, d := range ts.directories {
+		if d != "" {
+			dir, err := preprocessDir(d)
 			if err != nil {
 				return err
 			}
-			// fmt.Printf("File in fullpath %s exists\n", fullpath)
-			ts.fullpath = fullpath
-			return nil
+			fullpath := dir + "/" + ts.filename + ".toml"
+			// fmt.Printf("Lookup fullpath %s\n", fullpath)
+			// Test if the file exits
+			if _, err := os.Stat(fullpath); err == nil {
+				//Turn fullpath in absolute representation of path
+
+				// fmt.Printf("File in fullpath %s exists\n", fullpath)
+				ts.fullpath = fullpath
+				return nil
+			}
 		}
 	}
 	return fmt.Errorf("No file %s.toml found in directories %+v", ts.filename, ts.directories)

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/containous/flaeg"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -1413,4 +1415,44 @@ func TestTomlSourceErrorFileNotFound(t *testing.T) {
 		t.Errorf("Expected Error : help requested \nGot Error : %s", err)
 	}
 
+}
+
+func TestPreprocessDir(t *testing.T) {
+	thisPath, err := filepath.Abs(".")
+	if err != nil {
+		t.Fatalf("Error: %s", err.Error())
+	}
+	checkMap := map[string]string{
+		".":               thisPath,
+		"$HOME":           os.Getenv("HOME"),
+		"dir1/dir2":       thisPath + "/dir1/dir2",
+		"$HOME/dir1/dir2": os.Getenv("HOME") + "/dir1/dir2",
+		"/etc/test":       "/etc/test",
+	}
+	for in, check := range checkMap {
+		out, err := preprocessDir(in)
+		if err != nil {
+			t.Fatalf("Error: %s", err.Error())
+		}
+		if check != out {
+			t.Fatalf("input %s\nexpected %s\n got %s", in, check, out)
+		}
+	}
+
+}
+
+func TestFindFile(t *testing.T) {
+	toml := &TomlSource{"nothing", []string{"", "$HOME/test", "toml"}, ""}
+	if err := toml.findFile(); err != nil {
+		t.Fatalf("Error: %s", err.Error())
+	}
+	//check
+	thisPath, err := filepath.Abs(".")
+	if err != nil {
+		t.Fatalf("Error: %s", err.Error())
+	}
+	expected := thisPath + "/toml/nothing.toml"
+	if toml.fullpath != expected {
+		t.Fatalf("Expected %s\ngot %s", expected, toml.fullpath)
+	}
 }
