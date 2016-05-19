@@ -73,15 +73,16 @@ func (s *Staert) Run() error {
 
 //TomlSource impement Source
 type TomlSource struct {
-	filename    string
-	directories []string
-	fullpath    string
+	filename     string
+	dirNfullpath []string
+	fullpath     string
 }
 
-// NewTomlSource creats and return a pointer on TomlSource. Parameter filename is the name of the file without neither fullpath not extension type and directories is a slice of paths
-// (staert look for the toml file from the first directory to last one)
-func NewTomlSource(filename string, directories []string) *TomlSource {
-	return &TomlSource{filename, directories, ""}
+// NewTomlSource creats and return a pointer on TomlSource.
+// Parameter filename is the file name (without extension type, ".toml" will be added)
+// dirNfullpath may contain directories or fullpath to the file.
+func NewTomlSource(filename string, dirNfullpath []string) *TomlSource {
+	return &TomlSource{filename, dirNfullpath, ""}
 }
 
 func preprocessDir(dirIn string) (string, error) {
@@ -92,39 +93,34 @@ func preprocessDir(dirIn string) (string, error) {
 			end = len(dirIn)
 		}
 		dirOut = os.Getenv(dirIn[1:end]) + dirIn[end:]
-
 	}
 	dirOut, err := filepath.Abs(dirOut)
 	return dirOut, err
 }
 
-func (ts *TomlSource) findFile() error {
-	for _, d := range ts.directories {
-		if d != "" {
-			dir, err := preprocessDir(d)
-			if err != nil {
-				return err
+func findFile(filename string, dirNfile []string) string {
+	for _, df := range dirNfile {
+		if df != "" {
+			fullpath, _ := preprocessDir(df)
+			if fileinfo, err := os.Stat(fullpath); err == nil && !fileinfo.IsDir() {
+				return fullpath
 			}
-			fullpath := dir + "/" + ts.filename + ".toml"
-			// fmt.Printf("Lookup fullpath %s\n", fullpath)
-			// Test if the file exits
-			if _, err := os.Stat(fullpath); err == nil {
-				//Turn fullpath in absolute representation of path
-
-				// fmt.Printf("File in fullpath %s exists\n", fullpath)
-				ts.fullpath = fullpath
-				return nil
+			fullpath = fullpath + "/" + filename + ".toml"
+			if fileinfo, err := os.Stat(fullpath); err == nil && !fileinfo.IsDir() {
+				return fullpath
 			}
 		}
 	}
-	return fmt.Errorf("No file %s.toml found in directories %+v", ts.filename, ts.directories)
+	return ""
 }
 
 // Parse calls Flaeg Load Function
 func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
-	if err := ts.findFile(); err != nil {
-		return nil, err
+	ts.fullpath = findFile(ts.filename, ts.dirNfullpath)
+	if len(ts.fullpath) < 2 {
+		return cmd, nil
 	}
+	fmt.Printf("Read config in file : %s\n", ts.fullpath)
 	metadata, err := toml.DecodeFile(ts.fullpath, cmd.Config)
 	if err != nil {
 		return nil, err
