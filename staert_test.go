@@ -1474,7 +1474,12 @@ func TestTomlMissingCustomParser(t *testing.T) {
 		Config:                config,
 		DefaultPointersConfig: defaultPointersConfig,
 		Run: func() error {
-			fmt.Printf("Run example with the config :\n%+v\n", config)
+			// fmt.Printf("Run example with the config :\n%+v\n", config)
+			//check
+			check := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
+			if !reflect.DeepEqual(config, check) {
+				return fmt.Errorf("Expected %+v\ngot %+v", check.PtrCustom, config.PtrCustom)
+			}
 			return nil
 		},
 	}
