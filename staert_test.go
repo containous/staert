@@ -1406,13 +1406,20 @@ func TestTomlSourceErrorFileNotFound(t *testing.T) {
 			return nil
 		},
 	}
+	checkCmd := *rootCmd
 	s := NewStaert(rootCmd)
 	toml := NewTomlSource("nothing", []string{"../path", "/any/other/path"})
 	s.AddSource(toml)
 
 	//Check
-	if err := s.getConfig(rootCmd); err == nil || !strings.Contains(err.Error(), "No file nothing.toml found in directories [../path /any/other/path]") {
-		t.Errorf("Expected Error : help requested \nGot Error : %s", err)
+	if err := s.getConfig(rootCmd); err != nil {
+		t.Errorf("No Error expected\nGot Error : %s", err)
+	}
+	if !reflect.DeepEqual(checkCmd.Config, rootCmd.Config) {
+		t.Errorf("Expected %+v \nGot %+v", checkCmd.Config, rootCmd.Config)
+	}
+	if !reflect.DeepEqual(checkCmd.DefaultPointersConfig, rootCmd.DefaultPointersConfig) {
+		t.Errorf("Expected %+v \nGot %+v", checkCmd.DefaultPointersConfig, rootCmd.DefaultPointersConfig)
 	}
 
 }

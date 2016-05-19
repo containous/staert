@@ -123,7 +123,7 @@ func (ts *TomlSource) findFile() error {
 // Parse calls Flaeg Load Function
 func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if err := ts.findFile(); err != nil {
-		return nil, err
+		return cmd, nil
 	}
 	metadata, err := toml.DecodeFile(ts.fullpath, cmd.Config)
 	if err != nil {
