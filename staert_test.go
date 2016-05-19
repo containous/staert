@@ -1430,11 +1430,12 @@ func TestPreprocessDir(t *testing.T) {
 		t.Fatalf("Error: %s", err.Error())
 	}
 	checkMap := map[string]string{
-		".":               thisPath,
-		"$HOME":           os.Getenv("HOME"),
-		"dir1/dir2":       thisPath + "/dir1/dir2",
-		"$HOME/dir1/dir2": os.Getenv("HOME") + "/dir1/dir2",
-		"/etc/test":       "/etc/test",
+		".":                   thisPath,
+		"$HOME":               os.Getenv("HOME"),
+		"dir1/dir2":           thisPath + "/dir1/dir2",
+		"$HOME/dir1/dir2":     os.Getenv("HOME") + "/dir1/dir2",
+		"/etc/test":           "/etc/test",
+		"/etc/dir1/file1.ext": "/etc/dir1/file1.ext",
 	}
 	for in, check := range checkMap {
 		out, err := preprocessDir(in)
@@ -1449,18 +1450,16 @@ func TestPreprocessDir(t *testing.T) {
 }
 
 func TestFindFile(t *testing.T) {
-	toml := &TomlSource{"nothing", []string{"", "$HOME/test", "toml"}, ""}
-	if err := toml.findFile(); err != nil {
-		t.Fatalf("Error: %s", err.Error())
-	}
+	result := findFile("nothing", []string{"", "$HOME/test", "toml"})
+
 	//check
 	thisPath, err := filepath.Abs(".")
 	if err != nil {
 		t.Fatalf("Error: %s", err.Error())
 	}
 	expected := thisPath + "/toml/nothing.toml"
-	if toml.fullpath != expected {
-		t.Fatalf("Expected %s\ngot %s", expected, toml.fullpath)
+	if result != expected {
+		t.Fatalf("Expected %s\ngot %s", expected, result)
 	}
 }
 
@@ -1501,5 +1500,24 @@ func TestTomlMissingCustomParser(t *testing.T) {
 	check := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
 	if !reflect.DeepEqual(config, check) {
 		t.Fatalf("Expected %+v\ngot %+v", check.PtrCustom, config.PtrCustom)
+	}
+}
+func TestFindFileSliceFileAndDirLastIf(t *testing.T) {
+
+	//check
+	thisPath, _ := filepath.Abs(".")
+	check := thisPath + "/toml/trivial.toml"
+	if result := findFile("trivial", []string{"./toml/", "/any/other/path"}); result != check {
+		t.Fatalf("Expected %s\nGot %s", check, result)
+	}
+}
+func TestFindFileSliceFileAndDirFirstIf(t *testing.T) {
+	inFilename := ""
+	inDirNfile := []string{"$PWD/toml/nothing.toml"}
+	//check
+	thisPath, _ := filepath.Abs(".")
+	check := thisPath + "/toml/nothing.toml"
+	if result := findFile(inFilename, inDirNfile); result != check {
+		t.Fatalf("Expected %s\nGot %s", check, result)
 	}
 }
