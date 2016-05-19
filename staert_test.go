@@ -1456,3 +1456,43 @@ func TestFindFile(t *testing.T) {
 		t.Fatalf("Expected %s\ngot %s", expected, toml.fullpath)
 	}
 }
+
+type SliceStr []string
+type StructPtrCustom struct {
+	PtrCustom *StructCustomParser `description:"Ptr on StructCustomParser"`
+}
+type StructCustomParser struct {
+	CustomField SliceStr `description:"CustomField which requiers custom parser"`
+}
+
+func TestTomlMissingCustomParser(t *testing.T) {
+	config := &StructPtrCustom{}
+	defaultPointersConfig := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
+	command := &flaeg.Command{
+		Name:                  "MissingCustomParser",
+		Description:           "This is an example of description",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			// fmt.Printf("Run example with the config :\n%+v\n", config)
+			//check
+			check := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
+			if !reflect.DeepEqual(config, check) {
+				return fmt.Errorf("Expected %+v\ngot %+v", check.PtrCustom, config.PtrCustom)
+			}
+			return nil
+		},
+	}
+	s := NewStaert(command)
+	toml := NewTomlSource("missingCustomParser", []string{"toml"})
+	s.AddSource(toml)
+	if err := s.Run(); err != nil {
+		t.Fatalf("Error :%s", err)
+	}
+
+	//check
+	check := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
+	if !reflect.DeepEqual(config, check) {
+		t.Fatalf("Expected %+v\ngot %+v", check.PtrCustom, config.PtrCustom)
+	}
+}
