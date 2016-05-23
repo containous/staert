@@ -85,6 +85,11 @@ func NewTomlSource(filename string, dirNfullpath []string) *TomlSource {
 	return &TomlSource{filename, dirNfullpath, ""}
 }
 
+// ConfigFileUsed return config file used
+func (s *TomlSource) ConfigFileUsed() string {
+	return s.fullpath
+}
+
 func preprocessDir(dirIn string) (string, error) {
 	dirOut := dirIn
 	if strings.HasPrefix(dirIn, "$") {
