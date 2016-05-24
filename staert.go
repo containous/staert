@@ -1,7 +1,6 @@
 package staert
 
 import (
-	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/containous/flaeg"
 	"os"
@@ -45,30 +44,29 @@ func (s *Staert) getConfig(cmd *flaeg.Command) error {
 	return nil
 }
 
-// Run calls the Run func of the command with the parsed config
-func (s *Staert) Run() error {
-	cmd := s.command
+// GetConfig gets the parsed config
+func (s *Staert) GetConfig() (interface{}, error) {
 	for _, src := range s.sources {
 		//Type assertion
 		f, ok := src.(*flaeg.Flaeg)
 		if ok {
 			if fCmd, err := f.GetCommand(); err != nil {
-				return err
-			} else if cmd != fCmd {
-				if err := f.Run(); err != nil {
-					return err
-				}
-				return nil
+				return nil, err
+			} else if s.command != fCmd {
+				//IF fleag sub-command
+				s.command = fCmd
+				_, err = f.Parse(s.command)
+				return nil, err
 			}
 		}
 	}
-	if err := s.getConfig(cmd); err != nil {
-		return err
-	}
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
+	err := s.getConfig(s.command)
+	return s.command.Config, err
+}
+
+// Run calls the Run func of the command with the parsed config
+func (s *Staert) Run() error {
+	return s.command.Run()
 }
 
 //TomlSource impement Source
@@ -83,6 +81,11 @@ type TomlSource struct {
 // dirNfullpath may contain directories or fullpath to the file.
 func NewTomlSource(filename string, dirNfullpath []string) *TomlSource {
 	return &TomlSource{filename, dirNfullpath, ""}
+}
+
+// ConfigFileUsed return config file used
+func (ts *TomlSource) ConfigFileUsed() string {
+	return ts.fullpath
 }
 
 func preprocessDir(dirIn string) (string, error) {
@@ -120,7 +123,6 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if len(ts.fullpath) < 2 {
 		return cmd, nil
 	}
-	fmt.Printf("Read config in file : %s\n", ts.fullpath)
 	metadata, err := toml.DecodeFile(ts.fullpath, cmd.Config)
 	if err != nil {
 		return nil, err
