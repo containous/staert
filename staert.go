@@ -45,30 +45,29 @@ func (s *Staert) getConfig(cmd *flaeg.Command) error {
 	return nil
 }
 
-// Run calls the Run func of the command with the parsed config
-func (s *Staert) Run() error {
-	cmd := s.command
+// GetConfig gets the parsed config
+func (s *Staert) GetConfig() (interface{}, error) {
 	for _, src := range s.sources {
 		//Type assertion
 		f, ok := src.(*flaeg.Flaeg)
 		if ok {
 			if fCmd, err := f.GetCommand(); err != nil {
-				return err
-			} else if cmd != fCmd {
-				if err := f.Run(); err != nil {
-					return err
-				}
-				return nil
+				return nil, err
+			} else if s.command != fCmd {
+				//IF fleag sub-command
+				s.command = fCmd
+				_, err = f.Parse(s.command)
+				return nil, err
 			}
 		}
 	}
-	if err := s.getConfig(cmd); err != nil {
-		return err
-	}
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
+	err := s.getConfig(s.command)
+	return s.command.Config, err
+}
+
+// Run calls the Run func of the command with the parsed config
+func (s *Staert) Run() error {
+	return s.command.Run()
 }
 
 //TomlSource impement Source
@@ -86,8 +85,8 @@ func NewTomlSource(filename string, dirNfullpath []string) *TomlSource {
 }
 
 // ConfigFileUsed return config file used
-func (s *TomlSource) ConfigFileUsed() string {
-	return s.fullpath
+func (ts *TomlSource) ConfigFileUsed() string {
+	return ts.fullpath
 }
 
 func preprocessDir(dirIn string) (string, error) {
