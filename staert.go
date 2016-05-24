@@ -1,7 +1,6 @@
 package staert
 
 import (
-	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/containous/flaeg"
 	"os"
@@ -124,7 +123,6 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if len(ts.fullpath) < 2 {
 		return cmd, nil
 	}
-	fmt.Printf("Read config in file : %s\n", ts.fullpath)
 	metadata, err := toml.DecodeFile(ts.fullpath, cmd.Config)
 	if err != nil {
 		return nil, err
