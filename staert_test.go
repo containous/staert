@@ -1069,6 +1069,10 @@ func TestRunFleagFieldUnderPtrUnderPtr1Command(t *testing.T) {
 	s := NewStaert(rootCmd)
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
+	_, err := s.GetConfig()
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
 	if err := s.Run(); err != nil {
 		t.Fatalf("Error %s", err.Error())
 	}
@@ -1165,6 +1169,10 @@ func TestRunFleagFieldUnderPtrUnderPtr2Command(t *testing.T) {
 	fs.AddCommand(versionCmd)
 	s.AddSource(fs)
 	//check in command run func
+	_, err := s.GetConfig()
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
 	if err := s.Run(); err != nil {
 		t.Fatalf("Error %s", err.Error())
 	}
@@ -1259,6 +1267,10 @@ func TestRunFleagVersion2CommandCallVersion(t *testing.T) {
 	fs.AddCommand(versionCmd)
 	s.AddSource(fs)
 	//check in command run func
+	_, err := s.GetConfig()
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
 	if err := s.Run(); err != nil {
 		t.Fatalf("Error %s", err.Error())
 	}
@@ -1357,6 +1369,10 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 	toml := NewTomlSource("trivial", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 	//check in command run func
+	_, err := s.GetConfig()
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
 	if err := s.Run(); err != nil {
 		t.Fatalf("Error %s", err.Error())
 	}
@@ -1492,6 +1508,10 @@ func TestTomlMissingCustomParser(t *testing.T) {
 	s := NewStaert(command)
 	toml := NewTomlSource("missingCustomParser", []string{"toml"})
 	s.AddSource(toml)
+	_, err := s.GetConfig()
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
 	if err := s.Run(); err != nil {
 		t.Fatalf("Error :%s", err)
 	}
