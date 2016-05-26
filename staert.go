@@ -33,7 +33,7 @@ func (s *Staert) AddSource(src Source) {
 }
 
 // getConfig for a flaeg.Command run sources Parse func in the raw
-func (s *Staert) getConfig(cmd *flaeg.Command) error {
+func (s *Staert) parseConfigAllSources(cmd *flaeg.Command) error {
 	for _, src := range s.sources {
 		var err error
 		_, err = src.Parse(cmd)
@@ -44,8 +44,9 @@ func (s *Staert) getConfig(cmd *flaeg.Command) error {
 	return nil
 }
 
-// GetConfig gets the parsed config
-func (s *Staert) GetConfig() (interface{}, error) {
+// LoadConfig check which command is called and parses config
+// It returns the the parsed config or an error if it fails
+func (s *Staert) LoadConfig() (interface{}, error) {
 	for _, src := range s.sources {
 		//Type assertion
 		f, ok := src.(*flaeg.Flaeg)
@@ -54,17 +55,17 @@ func (s *Staert) GetConfig() (interface{}, error) {
 				return nil, err
 			} else if s.command != fCmd {
 				//IF fleag sub-command
-				s.command = fCmd
-				_, err = f.Parse(s.command)
-				return nil, err
+				s.command, err = f.Parse(fCmd)
+				return s.command.Config, err
 			}
 		}
 	}
-	err := s.getConfig(s.command)
+	err := s.parseConfigAllSources(s.command)
 	return s.command.Config, err
 }
 
-// Run calls the Run func of the command with the parsed config
+// Run calls the Run func of the command
+// Warning, Run doesn't parse the config
 func (s *Staert) Run() error {
 	return s.command.Run()
 }
