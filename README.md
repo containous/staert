@@ -106,14 +106,26 @@ Add TOML and flæg sources
     s.AddSource(f)
 ``` 
 NB : You can change order, so that, flaeg configuration will overwrite toml one 
-### Call Run
+### Load your configuration
 Just call Run function :
+```go
+	loadedConfig, err := s.LoadConfig();
+    if err != nil {
+		//OOPS
+	}
+	//DO WATH YOU WANT WITH loadedConfig 
+	//OR CALL RUN FUNC
+``` 
+
+### You can call Run
+Run function will call the func `run()` from the command :
 ```go
     if err := s.Run(); err != nil {
 		//OOPS
 	}
  }
 ``` 
+ NB : If you didn't call `LoadConfig()` before, your func `run()` will use your original configuration
 ### Let's run example
 
 TOML file `./toml/example.toml` :
