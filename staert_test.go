@@ -1213,7 +1213,7 @@ func TestRunFleagVersion2CommandCallVersion(t *testing.T) {
 	versionConfig := &VersionConfig{"0.1"}
 
 	args := []string{
-		"--toto",  //no effect
+		// "--toto",  //it now has effet
 		"version", //call Command
 		"-v2.2beta",
 	}
