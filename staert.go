@@ -128,6 +128,25 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if err != nil {
 		return nil, err
 	}
+	flags, err := flaeg.GetFlags(cmd.Config)
+	if err != nil {
+		return nil, err
+	}
+	flaegArgs, err := generateArgs(metadata, flags)
+	if err != nil {
+		return nil, err
+	}
+
+	// fmt.Println(flaegArgs)
+	err = flaeg.Load(cmd.Config, cmd.DefaultPointersConfig, flaegArgs)
+	//if err!= missing parser err
+	if err != nil && !strings.Contains(err.Error(), "No parser for type") {
+		return nil, err
+	}
+	return cmd, nil
+}
+
+func generateArgs(metadata toml.MetaData, flags []string) ([]string, error) {
 	flaegArgs := []string{}
 	keys := metadata.Keys()
 	for i, key := range keys {
@@ -144,15 +163,18 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 				}
 			}
 			if !hasUnderField {
-				flaegArgs = append(flaegArgs, "--"+strings.ToLower(key.String()))
+				match := false
+				for _, flag := range flags {
+					if flag == strings.ToLower(key.String()) {
+						match = true
+						break
+					}
+				}
+				if match {
+					flaegArgs = append(flaegArgs, "--"+strings.ToLower(key.String()))
+				}
 			}
 		}
 	}
-	// fmt.Println(flaegArgs)
-	err = flaeg.Load(cmd.Config, cmd.DefaultPointersConfig, flaegArgs)
-	//if err!= missing parser err
-	if err != nil && !strings.Contains(err.Error(), "No parser for type") {
-		return nil, err
-	}
-	return cmd, nil
+	return flaegArgs, nil
 }
