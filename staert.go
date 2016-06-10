@@ -118,7 +118,7 @@ func findFile(filename string, dirNfile []string) string {
 	return ""
 }
 
-// Parse calls Flaeg Load Function
+// Parse calls toml.DecodeFile() func
 func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	ts.fullpath = findFile(ts.filename, ts.dirNfullpath)
 	if len(ts.fullpath) < 2 {

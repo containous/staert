@@ -2,12 +2,56 @@ package staert
 
 import (
 	"fmt"
+	"github.com/containous/flaeg"
+	"github.com/docker/libkv"
 	"github.com/docker/libkv/store"
+	"github.com/mitchellh/mapstructure"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 )
+
+// KvSource impement Source
+// It handels all mapstructure features(Squashed Embeded Sub-Structures, Maps, Pointers)
+// It support Slices (and maybe Arraies). They must be sort in the KvStore like this :
+// Key : ".../[sliceIndex]" -> Value
+type KvSource struct {
+	store.Store
+	Prefix string
+}
+
+// NewKvSource creats a new KvSource
+func NewKvSource(backend store.Backend, addrs []string, options *store.Config, prefix string) (*KvSource, error) {
+	store, err := libkv.NewStore(backend, addrs, options)
+	return &KvSource{Store: store, Prefix: prefix}, err
+}
+
+// Parse use libkv and mapstructure to fill the structure
+func (kv *KvSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
+	pairs, err := kv.List(kv.Prefix)
+	if err != nil {
+		return nil, err
+	}
+	mapstruct, err := generateMapstructure(pairs, kv.Prefix)
+	if err != nil {
+		return nil, err
+	}
+	configDecoder := &mapstructure.DecoderConfig{
+		Metadata:         nil,
+		Result:           cmd.Config,
+		WeaklyTypedInput: true,
+		DecodeHook:       decodeHook,
+	}
+	decoder, err := mapstructure.NewDecoder(configDecoder)
+	if err != nil {
+		return nil, err
+	}
+	if err := decoder.Decode(mapstruct); err != nil {
+		return nil, err
+	}
+	return cmd, nil
+}
 
 func generateMapstructure(pairs []*store.KVPair, prefix string) (map[string]interface{}, error) {
 	raw := make(map[string]interface{})
@@ -41,15 +85,15 @@ func processKV(key string, v string, raw map[string]interface{}) (map[string]int
 			}
 			m = subm
 		}
-
 	}
 	m[key] = string(v)
-
 	return raw, nil
 }
 
-func decodeHookSlice(fromType reflect.Type, toType reflect.Type, data interface{}) (interface{}, error) {
-	if toType.Kind() == reflect.Slice {
+func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (interface{}, error) {
+	// TODO : Array support
+	switch toType.Kind() {
+	case reflect.Slice:
 		if fromType.Kind() == reflect.Map {
 			// Type assertion
 			dataMap, ok := data.(map[string]interface{})
