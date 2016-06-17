@@ -263,7 +263,8 @@ type Mock struct {
 }
 
 func (s *Mock) Put(key string, value []byte, opts *store.WriteOptions) error {
-	return errors.New("Put not supported")
+	s.KVPairs = append(s.KVPairs, &store.KVPair{key, value, 0})
+	return nil
 }
 
 func (s *Mock) Get(key string) (*store.KVPair, error) {
@@ -564,6 +565,72 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
 	}
 }
+
+func TestParseKvSourceNestedPtrsNil(t *testing.T) {
+	//Init
+	config := StructPtr{}
+
+	//Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                &config,
+		DefaultPointersConfig: &config,
+		Run: func() error { return nil },
+	}
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{
+					Key:   "prefix/ptrstruct1/s1int",
+					Value: []byte("1"),
+				},
+				{
+					Key:   "prefix/ptrstruct1/s1string",
+					Value: []byte("S1StringInitConfig"),
+				},
+				{
+					Key:   "prefix/ptrstruct1/s1bool",
+					Value: []byte("false"),
+				},
+				{
+					Key:   "prefix/ptrstruct1/s1ptrstruct3/s3float64",
+					Value: []byte("0"),
+				},
+				{
+					Key:   "prefix/durationfield",
+					Value: []byte("21000000000"),
+				},
+			},
+		},
+		"prefix/",
+	}
+	if _, err := kv.Parse(rootCmd); err != nil {
+		t.Fatalf("Error %s", err)
+	}
+
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:        1,
+			S1String:     "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{},
+		},
+		DurationField: 21 * time.Second,
+	}
+
+	if !reflect.DeepEqual(check, rootCmd.Config) {
+		printResult, err := json.Marshal(rootCmd.Config)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+		printCheck, err := json.Marshal(check)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
+	}
+}
 func TestIntegrationMockList(t *testing.T) {
 	kv := &Mock{
 		KVPairs: []*store.KVPair{
@@ -594,5 +661,256 @@ func TestIntegrationMockList(t *testing.T) {
 			t.Fatalf("key %s expected value %s got %s", p.Key, check[p.Key], p.Value)
 		}
 	}
-
 }
+
+// TestCollateKvPairs
+func TestCollateKvPairsBasic(t *testing.T) {
+	//init
+	config := &struct {
+		Vstring string
+		Vint    int
+		Vuint   uint
+		Vbool   bool
+		Vfloat  float64
+		Vextra  string
+		vsilent bool
+		Vdata   interface{}
+	}{
+		Vstring: "tata",
+		Vint:    -15,
+		Vuint:   51,
+		Vbool:   true,
+		Vfloat:  1.5,
+		Vextra:  "toto",
+		vsilent: true,
+		Vdata:   42,
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/vbool":   "true",
+		"prefix/vfloat":  "1.5",
+		"prefix/vextra":  "toto",
+		"prefix/vsilent": "true",
+		"prefix/vdata":   "42",
+		"prefix/vstring": "tata",
+		"prefix/vint":    "-15",
+		"prefix/vuint":   "51",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+
+func TestCollateKvPairsNestedPointers(t *testing.T) {
+	//init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:        1,
+			S1String:     "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{},
+		},
+		DurationField: 21 * time.Second,
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/ptrstruct1/s1int":                  "1",
+		"prefix/ptrstruct1/s1string":               "S1StringInitConfig",
+		"prefix/ptrstruct1/s1bool":                 "false",
+		"prefix/ptrstruct1/s1ptrstruct3/s3float64": "0",
+		"prefix/durationfield":                     "21000000000",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+
+func TestCollateKvPairsMapStringString(t *testing.T) {
+	//init
+	config := &struct {
+		Vfoo   string
+		Vother map[string]string
+	}{
+		Vfoo: "toto",
+		Vother: map[string]string{
+			"k1": "v1",
+			"k2": "v2",
+		},
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/vother/k1": "v1",
+		"prefix/vother/k2": "v2",
+		"prefix/vfoo":      "toto",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+func TestCollateKvPairsMapIntString(t *testing.T) {
+	//init
+	config := &struct {
+		Vfoo   string
+		Vother map[int]string
+	}{
+		Vfoo: "toto",
+		Vother: map[int]string{
+			51: "v1",
+			15: "v2",
+		},
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/vother/51": "v1",
+		"prefix/vother/15": "v2",
+		"prefix/vfoo":      "toto",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+func TestCollateKvPairsMapStringStruct(t *testing.T) {
+	//init
+	config := &struct {
+		Vfoo   string
+		Vother map[string]Struct1
+	}{
+		Vfoo: "toto",
+		Vother: map[string]Struct1{
+			"k1": Struct1{
+				S1Bool:       true,
+				S1Int:        51,
+				S1PtrStruct3: nil,
+			},
+			"k2": Struct1{
+				S1String: "tata",
+			},
+		},
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/vother/k1/s1bool":   "true",
+		"prefix/vother/k1/s1int":    "51",
+		"prefix/vother/k1/s1string": "",
+		"prefix/vother/k2/s1bool":   "false",
+		"prefix/vother/k2/s1int":    "0",
+		"prefix/vother/k2/s1string": "tata",
+		"prefix/vfoo":               "toto",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+func TestCollateKvPairsMapStructStructSouldFail(t *testing.T) {
+	//init
+	config := &struct {
+		Vfoo   string
+		Vother map[Struct1]Struct1
+	}{
+		Vfoo: "toto",
+		Vother: map[Struct1]Struct1{
+			Struct1{
+				S1Bool: true,
+				S1Int:  1,
+			}: Struct1{
+				S1Int: 11,
+			},
+			Struct1{
+				S1Bool: true,
+				S1Int:  2,
+			}: Struct1{
+				S1Int: 22,
+			},
+		},
+	}
+	//test
+	kv := map[string]string{}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	if err == nil || !strings.Contains(err.Error(), "Struct as key not supported") {
+		t.Fatalf("Expected error Struct as key not supported\ngot: %s", err)
+	}
+}
+
+func TestCollateKvPairsSliceInt(t *testing.T) {
+	//init
+	config := &struct {
+		Vfoo   string
+		Vother []int
+	}{
+		Vfoo:   "toto",
+		Vother: []int{51, 15},
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/vother/0": "51",
+		"prefix/vother/1": "15",
+		"prefix/vfoo":     "toto",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+
+func TestCollateKvPairsSlicePtrOnStruct(t *testing.T) {
+	//init
+	config := &struct {
+		Vfoo   string
+		Vother []*BasicStruct
+	}{
+		Vfoo: "toto",
+		Vother: []*BasicStruct{
+			&BasicStruct{},
+			&BasicStruct{
+				Bar1: "tata",
+				Bar2: "titi",
+			},
+		},
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/vother/0/bar1": "",
+		"prefix/vother/0/bar2": "",
+		"prefix/vother/1/bar1": "tata",
+		"prefix/vother/1/bar2": "titi",
+		"prefix/vfoo":          "toto",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+
+//TODO : TestStoreConfig

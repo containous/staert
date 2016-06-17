@@ -1,6 +1,7 @@
 package staert
 
 import (
+	"errors"
 	"fmt"
 	"github.com/containous/flaeg"
 	"github.com/docker/libkv"
@@ -18,7 +19,7 @@ import (
 // Key : ".../[sliceIndex]" -> Value
 type KvSource struct {
 	store.Store
-	Prefix string
+	Prefix string // like this "prefix/" (wiht the /)
 }
 
 // NewKvSource creats a new KvSource
@@ -124,4 +125,81 @@ func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (i
 		}
 	}
 	return data, nil
+}
+
+// StoreConfig stores the config into the KV Store
+func (kv *KvSource) StoreConfig(config interface{}) error {
+	kvMap := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kvMap, kv.Prefix); err != nil {
+		return err
+	}
+	for k, v := range kvMap {
+		if err := kv.Put(k, []byte(v), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string) error {
+	name := key
+	kind := objValue.Kind()
+	switch kind {
+	case reflect.Struct:
+		for i := 0; i < objValue.NumField(); i++ {
+			if objValue.Type().Field(i).Anonymous {
+				if err := collateKvRecursive(objValue.Field(i), kv, name); err != nil {
+					return err
+				}
+			} else {
+				fieldName := objValue.Type().Field(i).Name
+				name += objValue.Type().Name()
+				if len(key) == 0 {
+					name = strings.ToLower(fieldName)
+				} else {
+					name = key + "/" + strings.ToLower(fieldName)
+				}
+
+				if err := collateKvRecursive(objValue.Field(i), kv, name); err != nil {
+					return err
+				}
+			}
+		}
+	case reflect.Ptr:
+		if !objValue.IsNil() {
+			if err := collateKvRecursive(objValue.Elem(), kv, name); err != nil {
+				return err
+			}
+		}
+
+	case reflect.Map:
+		for _, k := range objValue.MapKeys() {
+			if k.Kind() == reflect.Struct {
+				return errors.New("Struct as key not supported")
+			}
+			name = key + "/" + fmt.Sprint(k)
+			if err := collateKvRecursive(objValue.MapIndex(k), kv, name); err != nil {
+				return err
+			}
+		}
+	case reflect.Array, reflect.Slice:
+		for i := 0; i < objValue.Len(); i++ {
+			name = key + "/" + strconv.Itoa(i)
+			if err := collateKvRecursive(objValue.Index(i), kv, name); err != nil {
+				return err
+			}
+		}
+	case reflect.Interface, reflect.String, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
+		reflect.Uint32, reflect.Uint64, reflect.Uintptr, reflect.Float32, reflect.Float64:
+		if _, ok := kv[name]; ok {
+			return errors.New("key already exists: " + name)
+		}
+		kv[name] = fmt.Sprint(objValue)
+
+	default:
+		fmt.Printf("Kind %s not suported yet\n", kind)
+		return nil
+	}
+	return nil
 }
