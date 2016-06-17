@@ -19,7 +19,7 @@ import (
 // Key : ".../[sliceIndex]" -> Value
 type KvSource struct {
 	store.Store
-	Prefix string // like this "prefix/" (wiht the /)
+	Prefix string // like this "prefix" (without the /)
 }
 
 // NewKvSource creats a new KvSource
@@ -67,7 +67,7 @@ func generateMapstructure(pairs []*store.KVPair, prefix string) (map[string]inte
 	raw := make(map[string]interface{})
 	for _, p := range pairs {
 		// Trim the prefix off our key first
-		key := strings.TrimPrefix(p.Key, prefix)
+		key := strings.TrimPrefix(p.Key, prefix+"/")
 		raw, err := processKV(key, string(p.Value), raw)
 		if err != nil {
 			return raw, err

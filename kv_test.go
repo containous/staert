@@ -23,7 +23,7 @@ func TestGenerateMapstructureBasic(t *testing.T) {
 			Value: []byte("bar"),
 		},
 	}
-	prefix := "test/"
+	prefix := "test"
 
 	output, err := generateMapstructure(moke, prefix)
 	if err != nil {
@@ -56,7 +56,7 @@ func TestGenerateMapstructureTrivialMap(t *testing.T) {
 			Value: []byte("bar"),
 		},
 	}
-	prefix := "test/"
+	prefix := "test"
 
 	output, err := generateMapstructure(moke, prefix)
 	if err != nil {
@@ -94,7 +94,7 @@ func TestGenerateMapstructureTrivialSlice(t *testing.T) {
 			Value: []byte("bar2"),
 		},
 	}
-	prefix := "test/"
+	prefix := "test"
 
 	output, err := generateMapstructure(moke, prefix)
 	if err != nil {
@@ -137,7 +137,7 @@ func TestGenerateMapstructureNotTrivialSlice(t *testing.T) {
 			Value: []byte("foo"),
 		},
 	}
-	prefix := "test/"
+	prefix := "test"
 
 	output, err := generateMapstructure(moke, prefix)
 	if err != nil {
@@ -393,7 +393,7 @@ func TestGenerateMapstructureTrivial(t *testing.T) {
 			Value: []byte("28"),
 		},
 	}
-	prefix := "test/"
+	prefix := "test"
 	output, err := generateMapstructure(input, prefix)
 	if err != nil {
 		t.Fatalf("Error :%s", err)
@@ -539,7 +539,7 @@ func TestParseKvSourceTrivial(t *testing.T) {
 				},
 			},
 		},
-		"test/",
+		"test",
 	}
 	if _, err := kv.Parse(rootCmd); err != nil {
 		t.Fatalf("Error %s", err)
@@ -595,7 +595,7 @@ func TestLoadConfigKvSourceNestedPtrsNil(t *testing.T) {
 				},
 			},
 		},
-		"prefix/",
+		"prefix",
 	}
 	if err := kv.LoadConfig(config); err != nil {
 		t.Fatalf("Error %s", err)
@@ -661,7 +661,7 @@ func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 				},
 			},
 		},
-		"prefix/",
+		"prefix",
 	}
 	if _, err := kv.Parse(rootCmd); err != nil {
 		t.Fatalf("Error %s", err)
@@ -1027,4 +1027,60 @@ func TestCollateKvPairsEmbeddedSquash(t *testing.T) {
 	}
 }
 
-//TODO : TestStoreConfig
+func TestCollateKvPairsNotSupportedKindSouldFail(t *testing.T) {
+	//init
+	config := &struct {
+		Vchan chan int
+	}{
+		Vchan: make(chan int),
+	}
+	//test
+	kv := map[string]string{}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	if err == nil || !strings.Contains(err.Error(), "Kind chan not supported") {
+		t.Fatalf("Expected error : Kind chan not supported\nGot : %s", err)
+	}
+}
+
+func TestStoreConfigEmbeddedSquash(t *testing.T) {
+	//init
+	config := &struct {
+		BasicStruct `mapstructure:",squash"`
+		Vfoo        string
+	}{
+		BasicStruct: BasicStruct{
+			Bar1: "tata",
+			Bar2: "titi",
+		},
+		Vfoo: "toto",
+	}
+	kv := &KvSource{
+		&Mock{},
+		"prefix",
+	}
+	//test
+	if err := kv.StoreConfig(config); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+
+	//check
+	checkMap := map[string]string{
+		"prefix/bar1": "tata",
+		"prefix/bar2": "titi",
+		"prefix/vfoo": "toto",
+	}
+	result, err := kv.List("")
+	if err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	if len(result) != len(checkMap) {
+		t.Fatalf("length of kv.List is not %d", len(checkMap))
+	}
+	for _, pair := range result {
+		if string(pair.Value) != checkMap[pair.Key] {
+			t.Fatalf("Key %s\nExpected value %s, got %s", pair.Key, pair.Value, checkMap[pair.Key])
+		}
+
+	}
+
+}

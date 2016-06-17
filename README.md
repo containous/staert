@@ -146,7 +146,7 @@ PointerField contains:&{BoolField:true FloatField:55.55}
 
 ## Full example : 
 [Tagoæl](https://github.com/debovema/tagoael) is a trivial example which shows how Stært can be use.
-This funny golang progam takes its configuration form both TOML and Flaeg sources to display messages.
+This funny golang progam takes its configuration from both TOML and Flaeg sources to display messages.
 ```shell
 $ ./tagoael -h
 tagoæl is an enhanced Hello World program to display messages with
@@ -191,7 +191,7 @@ KvSource impement Source:
 ```go
 type KvSource struct {
 	store.Store
-	Prefix string // like this "prefix/" (wiht the /)
+	Prefix string // like this "prefix" (witout the /)
 }
 ```
 
