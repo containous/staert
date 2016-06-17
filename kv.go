@@ -30,28 +30,37 @@ func NewKvSource(backend store.Backend, addrs []string, options *store.Config, p
 
 // Parse use libkv and mapstructure to fill the structure
 func (kv *KvSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
-	pairs, err := kv.List(kv.Prefix)
+	err := kv.LoadConfig(cmd.Config)
 	if err != nil {
 		return nil, err
+	}
+	return cmd, nil
+}
+
+// LoadConfig load data from the KV Store into the config structure (given by reference)
+func (kv *KvSource) LoadConfig(config interface{}) error {
+	pairs, err := kv.List(kv.Prefix)
+	if err != nil {
+		return err
 	}
 	mapstruct, err := generateMapstructure(pairs, kv.Prefix)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	configDecoder := &mapstructure.DecoderConfig{
 		Metadata:         nil,
-		Result:           cmd.Config,
+		Result:           config,
 		WeaklyTypedInput: true,
 		DecodeHook:       decodeHook,
 	}
 	decoder, err := mapstructure.NewDecoder(configDecoder)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := decoder.Decode(mapstruct); err != nil {
-		return nil, err
+		return err
 	}
-	return cmd, nil
+	return nil
 }
 
 func generateMapstructure(pairs []*store.KVPair, prefix string) (map[string]interface{}, error) {
@@ -147,13 +156,23 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 	switch kind {
 	case reflect.Struct:
 		for i := 0; i < objValue.NumField(); i++ {
-			if objValue.Type().Field(i).Anonymous {
+			objType := objValue.Type()
+			squashed := false
+			if objType.Field(i).Anonymous {
+				if objValue.Field(i).Kind() == reflect.Struct {
+					tags := objType.Field(i).Tag
+					if strings.Contains(string(tags), "squash") {
+						squashed = true
+					}
+				}
+			}
+			if squashed {
 				if err := collateKvRecursive(objValue.Field(i), kv, name); err != nil {
 					return err
 				}
 			} else {
-				fieldName := objValue.Type().Field(i).Name
-				name += objValue.Type().Name()
+				fieldName := objType.Field(i).Name
+				//useless if not empty Prefix is required ?
 				if len(key) == 0 {
 					name = strings.ToLower(fieldName)
 				} else {
@@ -165,6 +184,7 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 				}
 			}
 		}
+
 	case reflect.Ptr:
 		if !objValue.IsNil() {
 			if err := collateKvRecursive(objValue.Elem(), kv, name); err != nil {
@@ -198,8 +218,7 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 		kv[name] = fmt.Sprint(objValue)
 
 	default:
-		fmt.Printf("Kind %s not suported yet\n", kind)
-		return nil
+		return fmt.Errorf("Kind %s not supported", kind.String())
 	}
 	return nil
 }

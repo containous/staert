@@ -565,6 +565,64 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
 	}
 }
+func TestLoadConfigKvSourceNestedPtrsNil(t *testing.T) {
+	//Init
+	config := &StructPtr{}
+
+	//Test
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{
+					Key:   "prefix/ptrstruct1/s1int",
+					Value: []byte("1"),
+				},
+				{
+					Key:   "prefix/ptrstruct1/s1string",
+					Value: []byte("S1StringInitConfig"),
+				},
+				{
+					Key:   "prefix/ptrstruct1/s1bool",
+					Value: []byte("false"),
+				},
+				{
+					Key:   "prefix/ptrstruct1/s1ptrstruct3/s3float64",
+					Value: []byte("0"),
+				},
+				{
+					Key:   "prefix/durationfield",
+					Value: []byte("21000000000"),
+				},
+			},
+		},
+		"prefix/",
+	}
+	if err := kv.LoadConfig(config); err != nil {
+		t.Fatalf("Error %s", err)
+	}
+
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:        1,
+			S1String:     "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{},
+		},
+		DurationField: 21 * time.Second,
+	}
+
+	if !reflect.DeepEqual(check, config) {
+		printResult, err := json.Marshal(config)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+		printCheck, err := json.Marshal(check)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
+	}
+}
 
 func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 	//Init
@@ -907,6 +965,62 @@ func TestCollateKvPairsSlicePtrOnStruct(t *testing.T) {
 		"prefix/vother/1/bar1": "tata",
 		"prefix/vother/1/bar2": "titi",
 		"prefix/vfoo":          "toto",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+
+func TestCollateKvPairsEmbedded(t *testing.T) {
+	//init
+	config := &struct {
+		BasicStruct
+		Vfoo string
+	}{
+		BasicStruct: BasicStruct{
+			Bar1: "tata",
+			Bar2: "titi",
+		},
+		Vfoo: "toto",
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/basicstruct/bar1": "tata",
+		"prefix/basicstruct/bar2": "titi",
+		"prefix/vfoo":             "toto",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+
+func TestCollateKvPairsEmbeddedSquash(t *testing.T) {
+	//init
+	config := &struct {
+		BasicStruct `mapstructure:",squash"`
+		Vfoo        string
+	}{
+		BasicStruct: BasicStruct{
+			Bar1: "tata",
+			Bar2: "titi",
+		},
+		Vfoo: "toto",
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	check := map[string]string{
+		"prefix/bar1": "tata",
+		"prefix/bar2": "titi",
+		"prefix/vfoo": "toto",
 	}
 	if !reflect.DeepEqual(kv, check) {
 		t.Fatalf("Expected %s\nGot %s", check, kv)
