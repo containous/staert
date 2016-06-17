@@ -12,9 +12,10 @@ We developed [`flaeg`](https://github.com/containous/flaeg) and `staert` in orde
 ## Features
  - Load your Configuration structure from many sources
  - Keep your Configuration structure values unchanged if no overwriting (support defaults values)
- - Two native sources :
-	- [Flæg](https://github.com/containous/flaeg)
-	- [Toml](http://github.com/BurntSushi/toml)
+ - Three native sources :
+	- Command line arguments using [flæg](https://github.com/containous/flaeg) package
+	- TOML config file using [toml](http://github.com/BurntSushi/toml) package
+	- [Key-Value Store](#kvstore) using [libkv](https://github.com/docker/libkv) and [mapstructure](https://github.com/mitchellh/mapstructure) packages
  - An Interface to add your own sources
  - Handle pointers field :
 	- You can give a structure of default values for pointers
@@ -141,6 +142,84 @@ Run example with the config :
 &{IntField:2 StringField:owerwrittenFromFlag PointerField:0xc82000ec80}
 PointerField contains:&{BoolField:true FloatField:55.55}
 
+```
+
+## Full example : 
+[Tagoæl](https://github.com/debovema/tagoael) is a trivial example which shows how Stært can be use.
+This funny golang progam takes its configuration form both TOML and Flaeg sources to display messages.
+```shell
+$ ./tagoael -h
+tagoæl is an enhanced Hello World program to display messages with
+an advanced configuration mechanism provided by flæg & stært.
+
+flæg:   https://github.com/containous/flaeg
+stært:  https://github.com/containous/staert
+tagoæl: https://github.com/debovema/tagoael
+
+
+Usage: tagoael [--flag=flag_argument] [-f[flag_argument]] ...     set flag_argument to flag(s)
+   or: tagoael [--flag[=true|false| ]] [-f[true|false| ]] ...     set true/false to boolean flag(s)
+
+Flags:
+        -c, --commandlineoverridesconfigfile               Whether configuration from command line overrides configuration from configuration file or not. (default "true")
+        --configfile                                       Configuration file to use (TOML). (default "tagoael")
+        -i, --displayindex                                 Whether to display index of each message (default "false")
+        -m, --messagetodisplay                             Message to display (default "HELLO WOLRD")
+        -n, --numbertodisplay                              Number of messages to display (default "1000")
+        -h, --help                                         Print Help (this message) and exit
+```
+Thanks you @debovema for this work :)
+
+## KvStore
+As like as Flæg and Toml sources, the configuration structure can be loaded from a Key-Value Store.
+The package [libkv](https://github.com/docker/libkv) provides connection to many KV Store like `Consul`, `Etcd` or `Zookeeper`.
+
+The whole configuration structure is stored, using architecture like this pattern :
+ - Key : `<prefix1>/<prefix2>/.../<fieldNameLevel1>/<fieldNameLevel2>/.../<fieldName>`
+ - Value : `<value>`
+ 
+It handels :
+ - All [mapstructure](https://github.com/mitchellh/mapstructure) features(`bool`, `int`, ... , Squashed Embeded Sub `struct`, Pointer).
+ - Maps with pattern : `.../<MapFieldName>/<mapKey>` -> `<mapValue>` (Struct as key not supported)
+ - Slices (and Arraies) with pattern : `.../<SliceFieldName>/<SliceIndex>` -> `<value>`
+
+Note : Hopefully, we provide the function `StoreConfig` to store your configuration structure ;)
+
+### KvSource
+KvSource impement Source: 
+
+```go
+type KvSource struct {
+	store.Store
+	Prefix string // like this "prefix/" (wiht the /)
+}
+```
+
+### Initialize 
+It can be Initialize like this :
+```go
+	kv, err := staert.KvSource(backend store.Backend, addrs []string, options *store.Config, prefix string)
+```
+
+### LoadConfig
+You can directly load data from the KV Store into the config structure (given by reference)
+```go
+	config := &ConfigStruct{} // Here your configuration structure by reference
+	err := kv.Parse(config)
+	//DO WATH YOU WANT WITH config
+```
+
+### Add to Stært sources
+Or you can add this source to Stært, as like as other sources
+```go
+	s.AddSource(kv)
+```
+
+### StoreConfig
+You can also store your whole configuration structure into the KV Store :
+```go
+	// We assume that config is Initialazed
+	err := s.StoreConfig(config)
 ```
 
 
