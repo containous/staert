@@ -115,7 +115,7 @@ Just call LoadConfig function :
     if err != nil {
 		//OOPS
 	}
-	//DO WATH YOU WANT WITH loadedConfig 
+	//DO WHAT YOU WANT WITH loadedConfig 
 	//OR CALL RUN FUNC
 ``` 
 
@@ -168,20 +168,20 @@ Flags:
         -n, --numbertodisplay                              Number of messages to display (default "1000")
         -h, --help                                         Print Help (this message) and exit
 ```
-Thanks you @debovema for this work :)
+Thank you [@debovema](https://github.com/debovema) for this work :)
 
 ## KvStore
-As like as Flæg and Toml sources, the configuration structure can be loaded from a Key-Value Store.
+As with Flæg and Toml sources, the configuration structure can be loaded from a Key-Value Store.
 The package [libkv](https://github.com/docker/libkv) provides connection to many KV Store like `Consul`, `Etcd` or `Zookeeper`.
 
 The whole configuration structure is stored, using architecture like this pattern :
  - Key : `<prefix1>/<prefix2>/.../<fieldNameLevel1>/<fieldNameLevel2>/.../<fieldName>`
  - Value : `<value>`
  
-It handels :
- - All [mapstructure](https://github.com/mitchellh/mapstructure) features(`bool`, `int`, ... , Squashed Embeded Sub `struct`, Pointer).
+It handles :
+ - All [mapstructure](https://github.com/mitchellh/mapstructure) features(`bool`, `int`, ... , Squashed Embedded Sub `struct`, Pointer).
  - Maps with pattern : `.../<MapFieldName>/<mapKey>` -> `<mapValue>` (Struct as key not supported)
- - Slices (and Arraies) with pattern : `.../<SliceFieldName>/<SliceIndex>` -> `<value>`
+ - Slices (and Arrays) with pattern : `.../<SliceFieldName>/<SliceIndex>` -> `<value>`
 
 Note : Hopefully, we provide the function `StoreConfig` to store your configuration structure ;)
 
@@ -196,7 +196,7 @@ type KvSource struct {
 ```
 
 ### Initialize 
-It can be Initialize like this :
+It can be initialized like this :
 ```go
 	kv, err := staert.KvSource(backend store.Backend, addrs []string, options *store.Config, prefix string)
 ```
@@ -206,11 +206,11 @@ You can directly load data from the KV Store into the config structure (given by
 ```go
 	config := &ConfigStruct{} // Here your configuration structure by reference
 	err := kv.Parse(config)
-	//DO WATH YOU WANT WITH config
+	//DO WHAT YOU WANT WITH config
 ```
 
 ### Add to Stært sources
-Or you can add this source to Stært, as like as other sources
+Or you can add this source to Stært, as with other sources
 ```go
 	s.AddSource(kv)
 ```

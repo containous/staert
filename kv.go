@@ -13,22 +13,22 @@ import (
 	"strings"
 )
 
-// KvSource impement Source
-// It handels all mapstructure features(Squashed Embeded Sub-Structures, Maps, Pointers)
-// It support Slices (and maybe Arraies). They must be sort in the KvStore like this :
+// KvSource implements Source
+// It handles all mapstructure features(Squashed Embeded Sub-Structures, Maps, Pointers)
+// It supports Slices (and maybe Arraies). They must be sorted in the KvStore like this :
 // Key : ".../[sliceIndex]" -> Value
 type KvSource struct {
 	store.Store
 	Prefix string // like this "prefix" (without the /)
 }
 
-// NewKvSource creats a new KvSource
+// NewKvSource creates a new KvSource
 func NewKvSource(backend store.Backend, addrs []string, options *store.Config, prefix string) (*KvSource, error) {
 	store, err := libkv.NewStore(backend, addrs, options)
 	return &KvSource{Store: store, Prefix: prefix}, err
 }
 
-// Parse use libkv and mapstructure to fill the structure
+// Parse uses libkv and mapstructure to fill the structure
 func (kv *KvSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	err := kv.LoadConfig(cmd.Config)
 	if err != nil {
@@ -37,7 +37,7 @@ func (kv *KvSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	return cmd, nil
 }
 
-// LoadConfig load data from the KV Store into the config structure (given by reference)
+// LoadConfig loads data from the KV Store into the config structure (given by reference)
 func (kv *KvSource) LoadConfig(config interface{}) error {
 	pairs, err := kv.List(kv.Prefix)
 	if err != nil {
@@ -78,7 +78,7 @@ func generateMapstructure(pairs []*store.KVPair, prefix string) (map[string]inte
 }
 
 func processKV(key string, v string, raw map[string]interface{}) (map[string]interface{}, error) {
-	// Determine what map we're writing the value to. We split by '/'
+	// Determine which map we're writing the value to. We split by '/'
 	// to determine any sub-maps that need to be created.
 	m := raw
 	children := strings.Split(key, "/")
