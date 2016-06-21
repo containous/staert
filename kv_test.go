@@ -740,7 +740,7 @@ func TestCollateKvPairsBasic(t *testing.T) {
 		Vbool:   true,
 		Vfloat:  1.5,
 		Vextra:  "toto",
-		vsilent: true,
+		vsilent: true, //Unexported : must not be in the map
 		Vdata:   42,
 	}
 	//test
@@ -753,7 +753,6 @@ func TestCollateKvPairsBasic(t *testing.T) {
 		"prefix/vbool":   "true",
 		"prefix/vfloat":  "1.5",
 		"prefix/vextra":  "toto",
-		"prefix/vsilent": "true",
 		"prefix/vdata":   "42",
 		"prefix/vstring": "tata",
 		"prefix/vint":    "-15",
@@ -1083,4 +1082,57 @@ func TestStoreConfigEmbeddedSquash(t *testing.T) {
 
 	}
 
+}
+
+func TestCollateKvPairsUnexported(t *testing.T) {
+	config := &struct {
+		Vstring string
+		vsilent string
+	}{
+		Vstring: "mustBeInTheMap",
+		vsilent: "mustNotBeInTheMap",
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	if _, ok := kv["prefix/vsilent"]; ok {
+		t.Fatalf("Exported field should not be in the map : %s", kv)
+	}
+
+	check := map[string]string{
+		"prefix/vstring": "mustBeInTheMap",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+
+}
+
+func TestCollateKvPairsShortNameUnexported(t *testing.T) {
+	config := &struct {
+		E string
+		u string
+	}{
+		E: "mustBeInTheMap",
+		u: "mustNotBeInTheMap",
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+	if _, ok := kv["prefix/u"]; ok {
+		t.Fatalf("Exported field should not be in the map : %s", kv)
+	}
+
+	check := map[string]string{
+		"prefix/e": "mustBeInTheMap",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
 }
