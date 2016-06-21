@@ -7,7 +7,8 @@ Stært is a Go library for loading and merging a program configuration structure
 
 ## Overview
 Stært was born in order to merge two sources of Configuration ([Flæg](https://github.com/containous/flaeg), [Toml](http://github.com/BurntSushi/toml)).
-We developed [`flaeg`](https://github.com/containous/flaeg) and `staert` in order to simplify configuration maintenance on [traefik](https://github.com/containous/traefik).
+Now it also supports [Key-Value Store](#kvstore).
+We developed [Flæg](https://github.com/containous/flaeg) and Stært in order to simplify configuration maintenance on [Træfik](https://github.com/containous/traefik).
 
 ## Features
  - Load your Configuration structure from many sources
@@ -186,7 +187,7 @@ It handles :
 Note : Hopefully, we provide the function `StoreConfig` to store your configuration structure ;)
 
 ### KvSource
-KvSource impement Source: 
+KvSource implements Source: 
 
 ```go
 type KvSource struct {
