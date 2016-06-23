@@ -1250,33 +1250,20 @@ func TestConvertPairs5Levels(t *testing.T) {
 	output := convertPairs(input)
 
 	//check
-	check := []*store.KVPair{
-		{
-			Key:   "prefix/l1",
-			Value: []byte("level1"),
-		},
-		{
-			Key:   "prefix/d1/l1",
-			Value: []byte("level2"),
-		},
-		{
-			Key:   "prefix/d1/l2",
-			Value: []byte("level2"),
-		},
-		{
-			Key:   "prefix/d2/d1/l1",
-			Value: []byte("level3"),
-		},
-		{
-			Key:   "prefix/d3/d2/d1/d1/d1",
-			Value: []byte("level5"),
-		},
+	check := map[string][]byte{
+		"prefix/l1":             []byte("level1"),
+		"prefix/d1/l1":          []byte("level2"),
+		"prefix/d1/l2":          []byte("level2"),
+		"prefix/d2/d1/l1":       []byte("level3"),
+		"prefix/d3/d2/d1/d1/d1": []byte("level5"),
 	}
 
 	if len(output) != len(check) {
 		t.Fatalf("Expected length %d, got %d", len(check), len(output))
 	}
-	if !reflect.DeepEqual(output, check) {
-		t.Fatalf("Expected %#v\nGot %#v", check, output)
+	for _, p := range output {
+		if !reflect.DeepEqual(p.Value, check[p.Key]) {
+			t.Fatalf("Key : %s\nExpected %s\nGot %s", p.Key, check[p.Key], p.Value)
+		}
 	}
 }
