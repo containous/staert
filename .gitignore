@@ -1,4 +1,5 @@
 .vscode
 debug.test
 coverage.out
-example*
+kv_local_test.go
+scripts

@@ -39,14 +39,16 @@ func (kv *KvSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 
 // LoadConfig loads data from the KV Store into the config structure (given by reference)
 func (kv *KvSource) LoadConfig(config interface{}) error {
-	pairs, err := kv.List(kv.Prefix)
+	pairs := map[string][]byte{}
+	if err := kv.ListRecursive(kv.Prefix, pairs); err != nil {
+		return err
+	}
+	// fmt.Printf("pairs : %#v\n", pairs)
+	mapstruct, err := generateMapstructure(convertPairs(pairs), kv.Prefix)
 	if err != nil {
 		return err
 	}
-	mapstruct, err := generateMapstructure(pairs, kv.Prefix)
-	if err != nil {
-		return err
-	}
+	// fmt.Printf("mapstruct : %#v\n", mapstruct)
 	configDecoder := &mapstructure.DecoderConfig{
 		Metadata:         nil,
 		Result:           config,
@@ -67,8 +69,8 @@ func generateMapstructure(pairs []*store.KVPair, prefix string) (map[string]inte
 	raw := make(map[string]interface{})
 	for _, p := range pairs {
 		// Trim the prefix off our key first
-		key := strings.TrimPrefix(p.Key, prefix+"/")
-		raw, err := processKV(key, string(p.Value), raw)
+		key := strings.TrimPrefix(strings.Trim(p.Key, "/"), strings.Trim(prefix, "/")+"/")
+		raw, err := processKV(key, p.Value, raw)
 		if err != nil {
 			return raw, err
 		}
@@ -77,7 +79,7 @@ func generateMapstructure(pairs []*store.KVPair, prefix string) (map[string]inte
 	return raw, nil
 }
 
-func processKV(key string, v string, raw map[string]interface{}) (map[string]interface{}, error) {
+func processKV(key string, v []byte, raw map[string]interface{}) (map[string]interface{}, error) {
 	// Determine which map we're writing the value to. We split by '/'
 	// to determine any sub-maps that need to be created.
 	m := raw
@@ -225,4 +227,43 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 		return fmt.Errorf("Kind %s not supported", kind.String())
 	}
 	return nil
+}
+
+// ListRecursive lists all key value childrens under key
+func (kv *KvSource) ListRecursive(key string, pairs map[string][]byte) error {
+	pairsN1, err := kv.List(key)
+	if err != nil {
+		return err
+	}
+	if len(pairsN1) == 0 {
+		pairLeaf, err := kv.Get(key)
+		if err != nil {
+			return err
+		}
+		if pairLeaf == nil {
+			return nil
+		}
+		pairs[pairLeaf.Key] = pairLeaf.Value
+		return nil
+	}
+	for _, p := range pairsN1 {
+		err := kv.ListRecursive(p.Key, pairs)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func convertPairs(pairs map[string][]byte) []*store.KVPair {
+	slicePairs := make([]*store.KVPair, len(pairs))
+	i := 0
+	for k, v := range pairs {
+		slicePairs[i] = &store.KVPair{
+			Key:   k,
+			Value: v,
+		}
+		i++
+	}
+	return slicePairs
 }

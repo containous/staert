@@ -310,8 +310,15 @@ func (s *Mock) List(prefix string) ([]*store.KVPair, error) {
 	}
 	kv := []*store.KVPair{}
 	for _, kvPair := range s.KVPairs {
-		if strings.HasPrefix(kvPair.Key, prefix) {
-			kv = append(kv, kvPair)
+		if strings.HasPrefix(kvPair.Key, prefix+"/") {
+			if secondSlashIndex := strings.IndexRune(kvPair.Key[len(prefix)+1:], '/'); secondSlashIndex == -1 {
+				kv = append(kv, kvPair)
+			} else {
+				dir := &store.KVPair{
+					Key: kvPair.Key[:secondSlashIndex+len(prefix)+1],
+				}
+				kv = append(kv, dir)
+			}
 		}
 	}
 	return kv, nil
@@ -689,35 +696,57 @@ func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
 	}
 }
-func TestIntegrationMockList(t *testing.T) {
-	kv := &Mock{
-		KVPairs: []*store.KVPair{
-			{
-				Key:   "test/ptrstruct1/s1int",
-				Value: []byte("28"),
-			},
-			{
-				Key:   "test/durationfield",
-				Value: []byte("28"),
+
+func TestParseKvSourceMap(t *testing.T) {
+	//Init
+	config := &struct {
+		Vmap map[string]int
+	}{}
+
+	//Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: config,
+		Run: func() error { return nil },
+	}
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{
+					Key:   "prefix/vmap/toto",
+					Value: []byte("1"),
+				},
+				{
+					Key:   "prefix/vmap/tata",
+					Value: []byte("2"),
+				},
+				{
+					Key:   "prefix/vmap/titi",
+					Value: []byte("3"),
+				},
 			},
 		},
+		"prefix",
 	}
-	pairs, err := kv.List("test/")
-	if err != nil {
-		t.Fatalf("Error : %s", err)
+	if _, err := kv.Parse(rootCmd); err != nil {
+		t.Fatalf("Error %s", err)
 	}
-	//check
-	if len(pairs) != 2 {
-		t.Fatalf("Expected 2 pairs got %d", len(pairs))
+
+	//Check
+	check := &struct {
+		Vmap map[string]int
+	}{
+		Vmap: map[string]int{
+			"toto": 1,
+			"tata": 2,
+			"titi": 3,
+		},
 	}
-	check := map[string][]byte{
-		"test/ptrstruct1/s1int": []byte("28"),
-		"test/durationfield":    []byte("28"),
-	}
-	for _, p := range pairs {
-		if !reflect.DeepEqual(p.Value, check[p.Key]) {
-			t.Fatalf("key %s expected value %s got %s", p.Key, check[p.Key], p.Value)
-		}
+
+	if !reflect.DeepEqual(check, rootCmd.Config) {
+		t.Fatalf("\nexpected\t: %#v\ngot\t\t\t: %#v\n", check, rootCmd.Config)
 	}
 }
 
@@ -1068,16 +1097,17 @@ func TestStoreConfigEmbeddedSquash(t *testing.T) {
 		"prefix/bar2": "titi",
 		"prefix/vfoo": "toto",
 	}
-	result, err := kv.List("")
+	result := map[string][]byte{}
+	err := kv.ListRecursive("prefix", result)
 	if err != nil {
 		t.Fatalf("Error : %s", err)
 	}
 	if len(result) != len(checkMap) {
 		t.Fatalf("length of kv.List is not %d", len(checkMap))
 	}
-	for _, pair := range result {
-		if string(pair.Value) != checkMap[pair.Key] {
-			t.Fatalf("Key %s\nExpected value %s, got %s", pair.Key, pair.Value, checkMap[pair.Key])
+	for k, v := range result {
+		if string(v) != checkMap[k] {
+			t.Fatalf("Key %s\nExpected value %s, got %s", k, v, checkMap[k])
 		}
 
 	}
@@ -1134,5 +1164,119 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 	}
 	if !reflect.DeepEqual(kv, check) {
 		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+func TestListRecursive5Levels(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{
+					Key:   "prefix/l1",
+					Value: []byte("level1"),
+				},
+				{
+					Key:   "prefix/d1/l1",
+					Value: []byte("level2"),
+				},
+				{
+					Key:   "prefix/d1/l2",
+					Value: []byte("level2"),
+				},
+				{
+					Key:   "prefix/d2/d1/l1",
+					Value: []byte("level3"),
+				},
+				{
+					Key:   "prefix/d3/d2/d1/d1/d1",
+					Value: []byte("level5"),
+				},
+			},
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	if err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+
+	//check
+	check := map[string][]byte{
+		"prefix/l1":             []byte("level1"),
+		"prefix/d1/l1":          []byte("level2"),
+		"prefix/d1/l2":          []byte("level2"),
+		"prefix/d2/d1/l1":       []byte("level3"),
+		"prefix/d3/d2/d1/d1/d1": []byte("level5"),
+	}
+	if len(pairs) != len(check) {
+		t.Fatalf("Expected length %d, got %d", len(check), len(pairs))
+	}
+	for k, v := range pairs {
+		if !reflect.DeepEqual(v, check[k]) {
+			t.Fatalf("Key %s\nExpected %s\nGot %s", k, check[k], v)
+		}
+	}
+}
+
+func TestListRecursiveEmpty(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{},
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	if err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+
+	//check
+	check := map[string][]byte{}
+	if len(pairs) != len(check) {
+		t.Fatalf("Expected length %d, got %d", len(check), len(pairs))
+	}
+}
+
+func TestConvertPairs5Levels(t *testing.T) {
+	input := map[string][]byte{
+		"prefix/l1":             []byte("level1"),
+		"prefix/d1/l1":          []byte("level2"),
+		"prefix/d1/l2":          []byte("level2"),
+		"prefix/d2/d1/l1":       []byte("level3"),
+		"prefix/d3/d2/d1/d1/d1": []byte("level5"),
+	}
+	//test
+	output := convertPairs(input)
+
+	//check
+	check := []*store.KVPair{
+		{
+			Key:   "prefix/l1",
+			Value: []byte("level1"),
+		},
+		{
+			Key:   "prefix/d1/l1",
+			Value: []byte("level2"),
+		},
+		{
+			Key:   "prefix/d1/l2",
+			Value: []byte("level2"),
+		},
+		{
+			Key:   "prefix/d2/d1/l1",
+			Value: []byte("level3"),
+		},
+		{
+			Key:   "prefix/d3/d2/d1/d1/d1",
+			Value: []byte("level5"),
+		},
+	}
+
+	if len(output) != len(check) {
+		t.Fatalf("Expected length %d, got %d", len(check), len(output))
+	}
+	if !reflect.DeepEqual(output, check) {
+		t.Fatalf("Expected %#v\nGot %#v", check, output)
 	}
 }
