@@ -199,7 +199,7 @@ type KvSource struct {
 ### Initialize 
 It can be initialized like this :
 ```go
-	kv, err := staert.KvSource(backend store.Backend, addrs []string, options *store.Config, prefix string)
+	kv, err := staert.NewKvSource(backend store.Backend, addrs []string, options *store.Config, prefix string)
 ```
 
 ### LoadConfig
