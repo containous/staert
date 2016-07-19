@@ -220,7 +220,7 @@ Or you can add this source to Stært, as with other sources
 You can also store your whole configuration structure into the KV Store :
 ```go
 	// We assume that config is Initialazed
-	err := s.StoreConfig(config)
+	err := kv.StoreConfig(config)
 ```
 
 
