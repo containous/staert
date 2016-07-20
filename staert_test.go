@@ -1606,3 +1606,127 @@ func TestRunWithoutLoadConfig(t *testing.T) {
 		t.Fatalf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
 	}
 }
+
+func TestFlaegTomlSubCommandParseAllSources(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
+	//init
+	args := []string{
+		"subcmd",
+		"--Vstring=toto",
+	}
+	config := &struct {
+		Vstring string `description:"string field"`
+		Vint    int    `description:"int field"`
+	}{
+		Vstring: "tata",
+		Vint:    -15,
+	}
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: config,
+		Run: func() error {
+			fmt.Fprintln(&b, "rootCmd")
+			fmt.Fprintf(&b, "run with config : %+v\n", config)
+			return nil
+		},
+	}
+	subCmd := &flaeg.Command{
+		Name:                  "subcmd",
+		Description:           "description subcmd",
+		Config:                config,
+		DefaultPointersConfig: config,
+		Run: func() error {
+			fmt.Fprintln(&b, "subcmd")
+			fmt.Fprintf(&b, "run with config : %+v\n", config)
+			return nil
+		},
+		Metadata: map[string]string{
+			"parseAllSources": "true",
+		},
+	}
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("subcmd", []string{"./toml/", "/any/other/path"})
+	s.AddSource(toml)
+	fs := flaeg.New(rootCmd, args)
+	fs.AddCommand(subCmd)
+	s.AddSource(fs)
+	_, err := s.LoadConfig()
+	if err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
+	if err = s.Run(); err != nil {
+		t.Fatalf("Error %s", err.Error())
+	}
+
+	//test
+	if !strings.Contains(b.String(), "subcmd") ||
+		!strings.Contains(b.String(), "Vstring:toto") ||
+		!strings.Contains(b.String(), "Vint:777") {
+		t.Fatalf("expected: subcmd, Vstring = toto, Vint = 777\n got %s", b.String())
+	}
+}
+
+func TestFlaegTomlSubCommandParseAllSourcesShouldError(t *testing.T) {
+	//use buffer instead of stdout
+	var b bytes.Buffer
+	//init
+	args := []string{
+		"subcmd",
+		"--Vstring=toto",
+	}
+	config := &struct {
+		Vstring string `description:"string field"`
+		Vint    int    `description:"int field"`
+	}{
+		Vstring: "tata",
+		Vint:    -15,
+	}
+
+	config2 := &struct {
+		Vstring int `description:"int field"` // TO check error
+		Vint    int `description:"int field"`
+	}{
+		Vstring: -1,
+		Vint:    -15,
+	}
+
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: config,
+		Run: func() error {
+			fmt.Fprintln(&b, "rootCmd")
+			fmt.Fprintf(&b, "run with config : %+v\n", config)
+			return nil
+		},
+	}
+	subCmd := &flaeg.Command{
+		Name:                  "subcmd",
+		Description:           "description subcmd",
+		Config:                config2,
+		DefaultPointersConfig: config2,
+		Run: func() error {
+			fmt.Fprintln(&b, "subcmd")
+			fmt.Fprintf(&b, "run with config : %+v\n", config)
+			return nil
+		},
+		Metadata: map[string]string{
+			"parseAllSources": "true",
+		},
+	}
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("subcmd", []string{"./toml/", "/any/other/path"})
+	s.AddSource(toml)
+	fs := flaeg.New(rootCmd, args)
+	fs.AddCommand(subCmd)
+	s.AddSource(fs)
+	_, err := s.LoadConfig()
+	errExp := "Config type doesn't match with root command config type."
+	if err == nil || !strings.Contains(err.Error(), errExp) {
+		t.Fatalf("Experted error %s\n got : %s", errExp, err)
+	}
+}

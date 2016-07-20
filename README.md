@@ -24,6 +24,10 @@ We developed [Flæg](https://github.com/containous/flaeg) and Stært in order to
  - Stært is Command oriented
     - It use `flaeg.Command`
     - Same comportment as [Flæg](https://github.com/containous/flaeg) commands
+	- Stært supports only one Command (the Root-Command)
+	- Flæg allows you to use many Commands
+	- Only Flæg will be used if a Sub-Command is called. (because Config type could be different from one Command to another)
+	- You can add Metadata `"parseAllSources" -> "true"` to a Sub-Command if you want to parse all sources (it requires the same Config type on the Sub-Command and the Root-Command)  
 
 ## Getting Started
 ### The configuration
