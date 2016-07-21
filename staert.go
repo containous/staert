@@ -1,10 +1,12 @@
 package staert
 
 import (
+	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/containous/flaeg"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -55,8 +57,19 @@ func (s *Staert) LoadConfig() (interface{}, error) {
 				return nil, err
 			} else if s.command != fCmd {
 				//IF fleag sub-command
-				s.command, err = f.Parse(fCmd)
-				return s.command.Config, err
+				if fCmd.Metadata["parseAllSources"] == "true" {
+					//IF parseAllSources
+					fCmdConfigType := reflect.TypeOf(fCmd.Config)
+					sCmdConfigType := reflect.TypeOf(s.command.Config)
+					if fCmdConfigType != sCmdConfigType {
+						return nil, fmt.Errorf("Command %s : Config type doesn't match with root command config type. Expected %s got %s", fCmd.Name, sCmdConfigType.Name(), fCmdConfigType.Name())
+					}
+					s.command = fCmd
+				} else {
+					// ELSE (not parseAllSources)
+					s.command, err = f.Parse(fCmd)
+					return s.command.Config, err
+				}
 			}
 		}
 	}
