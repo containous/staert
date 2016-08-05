@@ -153,7 +153,7 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	// fmt.Println(flaegArgs)
 	err = flaeg.Load(cmd.Config, cmd.DefaultPointersConfig, flaegArgs)
 	//if err!= missing parser err
-	if err != nil && !strings.Contains(err.Error(), "No parser for type") {
+	if err != nil && err != flaeg.ErrParserNotFound {
 		return nil, err
 	}
 	return cmd, nil
