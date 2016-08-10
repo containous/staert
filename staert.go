@@ -141,11 +141,11 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	flags, err := flaeg.GetFlags(cmd.Config)
+	boolFlags, err := flaeg.GetBoolFlags(cmd.Config)
 	if err != nil {
 		return nil, err
 	}
-	flaegArgs, hasUnderField, err := generateArgs(metadata, flags)
+	flaegArgs, hasUnderField, err := generateArgs(metadata, boolFlags)
 	if err != nil {
 		return nil, err
 	}
@@ -173,8 +173,8 @@ func generateArgs(metadata toml.MetaData, flags []string) ([]string, bool, error
 	for i, key := range keys {
 		// fmt.Println(key)
 		if metadata.Type(key.String()) == "Hash" {
-			//Ptr case
-			// fmt.Printf("%s is a ptr\n", key)
+			// TOML hashes correspond to Go structs or maps.
+			// fmt.Printf("%s could be a ptr on a struct, or a map\n", key)
 			for j := i; j < len(keys); j++ {
 				// fmt.Printf("%s =? %s\n", keys[j].String(), "."+key.String())
 				if strings.Contains(keys[j].String(), key.String()+".") {
