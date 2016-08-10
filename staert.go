@@ -145,7 +145,7 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	flaegArgs, err := generateArgs(metadata, flags)
+	flaegArgs, hasUnderField, err := generateArgs(metadata, flags)
 	if err != nil {
 		return nil, err
 	}
@@ -156,18 +156,25 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if err != nil && err != flaeg.ErrParserNotFound {
 		return nil, err
 	}
+	if hasUnderField {
+		_, err := toml.DecodeFile(ts.fullpath, cmd.Config)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return cmd, nil
 }
 
-func generateArgs(metadata toml.MetaData, flags []string) ([]string, error) {
+func generateArgs(metadata toml.MetaData, flags []string) ([]string, bool, error) {
 	flaegArgs := []string{}
 	keys := metadata.Keys()
+	hasUnderField := false
 	for i, key := range keys {
 		// fmt.Println(key)
 		if metadata.Type(key.String()) == "Hash" {
 			//Ptr case
 			// fmt.Printf("%s is a ptr\n", key)
-			hasUnderField := false
 			for j := i; j < len(keys); j++ {
 				// fmt.Printf("%s =? %s\n", keys[j].String(), "."+key.String())
 				if strings.Contains(keys[j].String(), key.String()+".") {
@@ -175,19 +182,17 @@ func generateArgs(metadata toml.MetaData, flags []string) ([]string, error) {
 					break
 				}
 			}
-			if !hasUnderField {
-				match := false
-				for _, flag := range flags {
-					if flag == strings.ToLower(key.String()) {
-						match = true
-						break
-					}
+			match := false
+			for _, flag := range flags {
+				if flag == strings.ToLower(key.String()) {
+					match = true
+					break
 				}
-				if match {
-					flaegArgs = append(flaegArgs, "--"+strings.ToLower(key.String()))
-				}
+			}
+			if match {
+				flaegArgs = append(flaegArgs, "--"+strings.ToLower(key.String()))
 			}
 		}
 	}
-	return flaegArgs, nil
+	return flaegArgs, hasUnderField, nil
 }

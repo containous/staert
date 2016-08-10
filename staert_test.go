@@ -95,7 +95,7 @@ func TestFleagSourceNoArgs(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -164,7 +164,7 @@ func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
 			fmt.Printf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, result.PtrStruct1)
 		}
 
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -228,7 +228,7 @@ func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -287,7 +287,7 @@ func TestTomlSourceNothing(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -340,13 +340,15 @@ func TestTomlSourceTrivial(t *testing.T) {
 	check := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    28,
-			S1String: "S1StringInitConfig",
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
 		},
 		DurationField: 28 * time.Nanosecond,
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, config.PtrStruct1)
 	}
 }
 
@@ -410,7 +412,66 @@ func TestTomlSourcePointer(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+	}
+}
+
+func TestTomlSourceFieldUnderPointer(t *testing.T) {
+	//Init
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: time.Second,
+	}
+	defaultPointersConfig := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+	}
+
+	//Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			fmt.Printf("Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("fieldUnderPointer", []string{"./toml/", "/any/other/path"})
+	s.AddSource(toml)
+
+	if err := s.parseConfigAllSources(rootCmd); err != nil {
+		t.Errorf("Error %s", err.Error())
+	}
+	//Check
+	check := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+		},
+		DurationField: 42 * time.Second,
+	}
+
+	if !reflect.DeepEqual(rootCmd.Config, check) {
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, config.PtrStruct1)
 	}
 }
 
@@ -462,8 +523,9 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 	//Check
 	check := &StructPtr{
 		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
 			S1PtrStruct3: &Struct3{
 				S3Float64: 11.11,
 			},
@@ -472,7 +534,9 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, config.PtrStruct1)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1.S1PtrStruct3, config.PtrStruct1.S1PtrStruct3)
 	}
 }
 
@@ -534,7 +598,7 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
 
@@ -597,7 +661,7 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -664,7 +728,7 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -721,13 +785,16 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 	check := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    55,
-			S1String: "S1StringInitConfig",
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
 		},
 		DurationField: 28 * time.Nanosecond,
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, config.PtrStruct1)
+
 	}
 
 }
@@ -789,7 +856,8 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 	check := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    55,
-			S1String: "S1StringInitConfig",
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
 			S1PtrStruct3: &Struct3{
 				S3Float64: 11.11,
 			},
@@ -802,7 +870,7 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 		DurationField: time.Second * 55,
 	}
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -866,7 +934,7 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -934,7 +1002,7 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -995,7 +1063,8 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 	check := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    28,
-			S1String: "S1StringInitConfig",
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
 		},
 		DurationField: time.Nanosecond * 28,
 		PtrStruct2: &Struct2{
@@ -1006,7 +1075,7 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 
 }
@@ -1071,15 +1140,15 @@ func TestRunFleagFieldUnderPtrUnderPtr1Command(t *testing.T) {
 	s.AddSource(fs)
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	if err := s.Run(); err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	//check buffer
 	checkB := `Run with config`
 	if !strings.Contains(b.String(), checkB) {
-		t.Fatalf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
+		t.Errorf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
 	}
 }
 
@@ -1171,15 +1240,15 @@ func TestRunFleagFieldUnderPtrUnderPtr2Command(t *testing.T) {
 	//check in command run func
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	if err := s.Run(); err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	//check buffer
 	checkB := `Run with config`
 	if !strings.Contains(b.String(), checkB) {
-		t.Fatalf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
+		t.Errorf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
 	}
 }
 
@@ -1269,15 +1338,15 @@ func TestRunFleagVersion2CommandCallVersion(t *testing.T) {
 	//check in command run func
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	if err := s.Run(); err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	//check buffer
 	checkB := `Version 2.2beta`
 	if !strings.Contains(b.String(), checkB) {
-		t.Fatalf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
+		t.Errorf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
 	}
 }
 
@@ -1327,7 +1396,8 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 			check := &StructPtr{
 				PtrStruct1: &Struct1{
 					S1Int:    28,
-					S1String: "S1StringInitConfig",
+					S1String: "S1StringDefaultPointersConfig",
+					S1Bool:   true,
 				},
 				DurationField: time.Nanosecond * 28,
 				PtrStruct2: &Struct2{
@@ -1371,15 +1441,15 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 	//check in command run func
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	if err := s.Run(); err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	//check buffer
 	checkB := `Run with config :`
 	if !strings.Contains(b.String(), checkB) {
-		t.Fatalf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
+		t.Errorf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
 	}
 
 }
@@ -1443,7 +1513,7 @@ func TestTomlSourceErrorFileNotFound(t *testing.T) {
 func TestPreprocessDir(t *testing.T) {
 	thisPath, err := filepath.Abs(".")
 	if err != nil {
-		t.Fatalf("Error: %s", err.Error())
+		t.Errorf("Error: %s", err.Error())
 	}
 	checkMap := map[string]string{
 		".":                   thisPath,
@@ -1456,10 +1526,10 @@ func TestPreprocessDir(t *testing.T) {
 	for in, check := range checkMap {
 		out, err := preprocessDir(in)
 		if err != nil {
-			t.Fatalf("Error: %s", err.Error())
+			t.Errorf("Error: %s", err.Error())
 		}
 		if check != out {
-			t.Fatalf("input %s\nexpected %s\n got %s", in, check, out)
+			t.Errorf("input %s\nexpected %s\n got %s", in, check, out)
 		}
 	}
 
@@ -1471,11 +1541,11 @@ func TestFindFile(t *testing.T) {
 	//check
 	thisPath, err := filepath.Abs(".")
 	if err != nil {
-		t.Fatalf("Error: %s", err.Error())
+		t.Errorf("Error: %s", err.Error())
 	}
 	expected := thisPath + "/toml/nothing.toml"
 	if result != expected {
-		t.Fatalf("Expected %s\ngot %s", expected, result)
+		t.Errorf("Expected %s\ngot %s", expected, result)
 	}
 }
 
@@ -1510,16 +1580,16 @@ func TestTomlMissingCustomParser(t *testing.T) {
 	s.AddSource(toml)
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	if err := s.Run(); err != nil {
-		t.Fatalf("Error :%s", err)
+		t.Errorf("Error :%s", err)
 	}
 
 	//check
 	check := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
 	if !reflect.DeepEqual(config, check) {
-		t.Fatalf("Expected %+v\ngot %+v", check.PtrCustom, config.PtrCustom)
+		t.Errorf("Expected %+v\ngot %+v", check.PtrCustom, config.PtrCustom)
 	}
 }
 func TestFindFileSliceFileAndDirLastIf(t *testing.T) {
@@ -1528,7 +1598,7 @@ func TestFindFileSliceFileAndDirLastIf(t *testing.T) {
 	thisPath, _ := filepath.Abs(".")
 	check := thisPath + "/toml/trivial.toml"
 	if result := findFile("trivial", []string{"./toml/", "/any/other/path"}); result != check {
-		t.Fatalf("Expected %s\nGot %s", check, result)
+		t.Errorf("Expected %s\nGot %s", check, result)
 	}
 }
 func TestFindFileSliceFileAndDirFirstIf(t *testing.T) {
@@ -1538,7 +1608,7 @@ func TestFindFileSliceFileAndDirFirstIf(t *testing.T) {
 	thisPath, _ := filepath.Abs(".")
 	check := thisPath + "/toml/nothing.toml"
 	if result := findFile(inFilename, inDirNfile); result != check {
-		t.Fatalf("Expected %s\nGot %s", check, result)
+		t.Errorf("Expected %s\nGot %s", check, result)
 	}
 }
 func TestRunWithoutLoadConfig(t *testing.T) {
@@ -1598,12 +1668,12 @@ func TestRunWithoutLoadConfig(t *testing.T) {
 		DurationField: time.Second,
 	}
 	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 	//check buffer
 	checkB := `Run with config`
 	if !strings.Contains(b.String(), checkB) {
-		t.Fatalf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
+		t.Errorf("Error output doesn't contain %s,\ngot: %s", checkB, &b)
 	}
 }
 
@@ -1655,17 +1725,17 @@ func TestFlaegTomlSubCommandParseAllSources(t *testing.T) {
 	s.AddSource(fs)
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 	if err = s.Run(); err != nil {
-		t.Fatalf("Error %s", err.Error())
+		t.Errorf("Error %s", err.Error())
 	}
 
 	//test
 	if !strings.Contains(b.String(), "subcmd") ||
 		!strings.Contains(b.String(), "Vstring:toto") ||
 		!strings.Contains(b.String(), "Vint:777") {
-		t.Fatalf("expected: subcmd, Vstring = toto, Vint = 777\n got %s", b.String())
+		t.Errorf("expected: subcmd, Vstring = toto, Vint = 777\n got %s", b.String())
 	}
 }
 
@@ -1727,6 +1797,6 @@ func TestFlaegTomlSubCommandParseAllSourcesShouldError(t *testing.T) {
 	_, err := s.LoadConfig()
 	errExp := "Config type doesn't match with root command config type."
 	if err == nil || !strings.Contains(err.Error(), errExp) {
-		t.Fatalf("Experted error %s\n got : %s", errExp, err)
+		t.Errorf("Experted error %s\n got : %s", errExp, err)
 	}
 }
