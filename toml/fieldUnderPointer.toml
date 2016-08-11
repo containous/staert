@@ -1,10 +1,10 @@
 # This is a TOML document. Boom.
-# DurationField= 28
+DurationField= 42000000000
 [PtrStruct1]
 # S1Int= 28
 # S1String=  "S1StringToml"
-#  S1Bool=true
-[PtrStruct1.S1PtrStruct3]
+S1Bool=true
+# [PtrStruct1.S1PtrStruct3]
 # S3Float64 = 28.28
 
 # [PtrStruct2]
