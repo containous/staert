@@ -1,6 +1,7 @@
 package staert
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/containous/flaeg"
@@ -133,6 +134,12 @@ func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (i
 			}
 
 			return dataOutput, nil
+		} else if fromType.Kind() == reflect.String {
+			b, err := base64.StdEncoding.DecodeString(data.(string))
+			if err != nil {
+				return nil, err
+			}
+			return b, nil
 		}
 	}
 	return data, nil
@@ -209,10 +216,15 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 			}
 		}
 	case reflect.Array, reflect.Slice:
-		for i := 0; i < objValue.Len(); i++ {
-			name = key + "/" + strconv.Itoa(i)
-			if err := collateKvRecursive(objValue.Index(i), kv, name); err != nil {
-				return err
+		// Byte slices get special treatment
+		if objValue.Type().Elem().Kind() == reflect.Uint8 {
+			kv[name] = base64.StdEncoding.EncodeToString(objValue.Bytes())
+		} else {
+			for i := 0; i < objValue.Len(); i++ {
+				name = key + "/" + strconv.Itoa(i)
+				if err := collateKvRecursive(objValue.Index(i), kv, name); err != nil {
+					return err
+				}
 			}
 		}
 	case reflect.Interface, reflect.String, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16,
