@@ -812,6 +812,7 @@ func TestCollateKvPairsNestedPointers(t *testing.T) {
 		"prefix/ptrstruct1/s1int":                  "1",
 		"prefix/ptrstruct1/s1string":               "S1StringInitConfig",
 		"prefix/ptrstruct1/s1bool":                 "false",
+		"prefix/ptrstruct1/s1ptrstruct3/":          "",
 		"prefix/ptrstruct1/s1ptrstruct3/s3float64": "0",
 		"prefix/durationfield":                     "21000000000",
 	}
@@ -988,8 +989,10 @@ func TestCollateKvPairsSlicePtrOnStruct(t *testing.T) {
 	}
 	//check
 	check := map[string]string{
+		"prefix/vother/0/":     "",
 		"prefix/vother/0/bar1": "",
 		"prefix/vother/0/bar2": "",
+		"prefix/vother/1/":     "",
 		"prefix/vother/1/bar1": "tata",
 		"prefix/vother/1/bar2": "titi",
 		"prefix/vfoo":          "toto",

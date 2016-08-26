@@ -106,6 +106,13 @@ func processKV(key string, v []byte, raw map[string]interface{}) (map[string]int
 func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (interface{}, error) {
 	// TODO : Array support
 	switch toType.Kind() {
+	case reflect.Ptr:
+		if fromType.Kind() == reflect.String {
+			if data == "" {
+				// default value Pointer
+				return make(map[string]interface{}), nil
+			}
+		}
 	case reflect.Slice:
 		if fromType.Kind() == reflect.Map {
 			// Type assertion
@@ -152,7 +159,14 @@ func (kv *KvSource) StoreConfig(config interface{}) error {
 		return err
 	}
 	for k, v := range kvMap {
-		if err := kv.Put(k, []byte(v), nil); err != nil {
+		var writeOptions *store.WriteOptions
+		// is it a directory ?
+		if strings.HasSuffix(k, "/") {
+			writeOptions = &store.WriteOptions{
+				IsDir: true,
+			}
+		}
+		if err := kv.Put(k, []byte(v), writeOptions); err != nil {
 			return err
 		}
 	}
@@ -200,11 +214,14 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 
 	case reflect.Ptr:
 		if !objValue.IsNil() {
+			// hack to avoid calling this at the beginning
+			if len(kv) > 0 {
+				kv[name+"/"] = ""
+			}
 			if err := collateKvRecursive(objValue.Elem(), kv, name); err != nil {
 				return err
 			}
 		}
-
 	case reflect.Map:
 		for _, k := range objValue.MapKeys() {
 			if k.Kind() == reflect.Struct {
