@@ -389,6 +389,7 @@ func TestKvSourceEmpty(t *testing.T) {
 		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
 	}
 }
+
 func TestGenerateMapstructureTrivial(t *testing.T) {
 	input := []*store.KVPair{
 		{
@@ -423,8 +424,8 @@ func TestGenerateMapstructureTrivial(t *testing.T) {
 		}
 		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
 	}
-
 }
+
 func TestIntegrationMapstructureWithDecodeHookPointer(t *testing.T) {
 	mapstruct := map[string]interface{}{
 		"durationfield": "28",
@@ -521,6 +522,7 @@ func TestIntegrationMapstructureInitedPtrReset(t *testing.T) {
 		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
 	}
 }
+
 func TestParseKvSourceTrivial(t *testing.T) {
 	//Init
 	config := StructPtr{}
@@ -572,6 +574,7 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
 	}
 }
+
 func TestLoadConfigKvSourceNestedPtrsNil(t *testing.T) {
 	//Init
 	config := &StructPtr{}
@@ -812,6 +815,7 @@ func TestCollateKvPairsNestedPointers(t *testing.T) {
 		"prefix/ptrstruct1/s1int":                  "1",
 		"prefix/ptrstruct1/s1string":               "S1StringInitConfig",
 		"prefix/ptrstruct1/s1bool":                 "false",
+		"prefix/ptrstruct1/s1ptrstruct3/":          "",
 		"prefix/ptrstruct1/s1ptrstruct3/s3float64": "0",
 		"prefix/durationfield":                     "21000000000",
 	}
@@ -988,8 +992,10 @@ func TestCollateKvPairsSlicePtrOnStruct(t *testing.T) {
 	}
 	//check
 	check := map[string]string{
+		"prefix/vother/0/":     "",
 		"prefix/vother/0/bar1": "",
 		"prefix/vother/0/bar2": "",
+		"prefix/vother/1/":     "",
 		"prefix/vother/1/bar1": "tata",
 		"prefix/vother/1/bar2": "titi",
 		"prefix/vfoo":          "toto",
@@ -1166,6 +1172,7 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 		t.Fatalf("Expected %s\nGot %s", check, kv)
 	}
 }
+
 func TestListRecursive5Levels(t *testing.T) {
 	kv := &KvSource{
 		&Mock{
@@ -1265,5 +1272,75 @@ func TestConvertPairs5Levels(t *testing.T) {
 		if !reflect.DeepEqual(p.Value, check[p.Key]) {
 			t.Fatalf("Key : %s\nExpected %s\nGot %s", p.Key, check[p.Key], p.Value)
 		}
+	}
+}
+
+func TestCollateKvPairsBase64(t *testing.T) {
+	config := &struct {
+		Base64Bytes []byte
+	}{
+		Base64Bytes: []byte("Testing automatic base64 if byte array"),
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+
+	check := map[string]string{
+		"prefix/base64bytes": "VGVzdGluZyBhdXRvbWF0aWMgYmFzZTY0IGlmIGJ5dGUgYXJyYXk=",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+
+type TestBase64Struct struct {
+	Base64Bytes []byte
+}
+
+func TestParseKvSourceBase64(t *testing.T) {
+	//Init
+	config := TestBase64Struct{}
+
+	//Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                &config,
+		DefaultPointersConfig: &config,
+		Run: func() error { return nil },
+	}
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{
+					Key:   "test/base64bytes",
+					Value: []byte("VGVzdGluZyBhdXRvbWF0aWMgYmFzZTY0IGlmIGJ5dGUgYXJyYXk="),
+				},
+			},
+		},
+		"test",
+	}
+	if _, err := kv.Parse(rootCmd); err != nil {
+		t.Fatalf("Error %s", err)
+	}
+
+	//Check
+	check := &TestBase64Struct{
+		Base64Bytes: []byte("Testing automatic base64 if byte array"),
+	}
+
+	if !reflect.DeepEqual(check, rootCmd.Config) {
+		printResult, err := json.Marshal(rootCmd.Config)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+		printCheck, err := json.Marshal(check)
+		if err != nil {
+			t.Fatalf("error: %s", err)
+		}
+		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
 	}
 }
