@@ -158,7 +158,12 @@ func (kv *KvSource) StoreConfig(config interface{}) error {
 	if err := collateKvRecursive(reflect.ValueOf(config), kvMap, kv.Prefix); err != nil {
 		return err
 	}
-	for k, v := range kvMap {
+	keys := []string{}
+	for key := range kvMap {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
 		var writeOptions *store.WriteOptions
 		// is it a directory ?
 		if strings.HasSuffix(k, "/") {
@@ -166,7 +171,7 @@ func (kv *KvSource) StoreConfig(config interface{}) error {
 				IsDir: true,
 			}
 		}
-		if err := kv.Put(k, []byte(v), writeOptions); err != nil {
+		if err := kv.Put(k, []byte(kvMap[k]), writeOptions); err != nil {
 			return err
 		}
 	}
