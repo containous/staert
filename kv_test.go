@@ -1344,3 +1344,57 @@ func TestParseKvSourceBase64(t *testing.T) {
 		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", printCheck, printResult)
 	}
 }
+
+type CustomStruct struct {
+	Bar1 string
+	Bar2 string
+}
+
+// UnmarshalText define how unmarshal in TOML parsing
+func (c *CustomStruct) UnmarshalText(text []byte) error {
+	res := strings.Split(string(text), ",")
+	c.Bar1 = res[0]
+	c.Bar2 = res[1]
+	return nil
+}
+
+// MarshalText encodes the receiver into UTF-8-encoded text and returns the result.
+func (c *CustomStruct) MarshalText() (text []byte, err error) {
+	return []byte(c.Bar1 + "," + c.Bar2), nil
+}
+
+func TestCollateCustomMarshaller(t *testing.T) {
+	config := &CustomStruct{
+		Bar1: "Bar1",
+		Bar2: "Bar2",
+	}
+	//test
+	kv := map[string]string{}
+	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+	//check
+
+	check := map[string]string{
+		"prefix": "Bar1,Bar2",
+	}
+	if !reflect.DeepEqual(kv, check) {
+		t.Fatalf("Expected %s\nGot %s", check, kv)
+	}
+}
+
+func TestDecodeHookCustomMarshaller(t *testing.T) {
+	data := &CustomStruct{
+		Bar1: "Bar1",
+		Bar2: "Bar2",
+	}
+	output, err := decodeHook(reflect.TypeOf([]string{}), reflect.TypeOf(data), "Bar1,Bar2")
+	if err != nil {
+		t.Fatalf("Error : %s", err)
+	}
+
+	if !reflect.DeepEqual(data, output) {
+		t.Fatalf("Expected %#v\nGot %#v", data, output)
+	}
+
+}

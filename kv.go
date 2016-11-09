@@ -1,6 +1,7 @@
 package staert
 
 import (
+	"encoding"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -105,6 +106,17 @@ func processKV(key string, v []byte, raw map[string]interface{}) (map[string]int
 
 func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (interface{}, error) {
 	// TODO : Array support
+
+	// custom unmarshaler
+	textUnmarshalerType := reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+	if toType.Implements(textUnmarshalerType) {
+		object := reflect.New(toType.Elem()).Interface()
+		err := object.(encoding.TextUnmarshaler).UnmarshalText([]byte(data.(string)))
+		if err != nil {
+			return nil, fmt.Errorf("Error unmarshaling %v: %v", data, err)
+		}
+		return object, nil
+	}
 	switch toType.Kind() {
 	case reflect.Ptr:
 		if fromType.Kind() == reflect.String {
@@ -181,6 +193,16 @@ func (kv *KvSource) StoreConfig(config interface{}) error {
 func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string) error {
 	name := key
 	kind := objValue.Kind()
+
+	// custom marshaler
+	if marshaler, ok := objValue.Interface().(encoding.TextMarshaler); ok {
+		test, err := marshaler.MarshalText()
+		if err != nil {
+			return fmt.Errorf("Error marshaling key %s: %v", name, err)
+		}
+		kv[name] = string(test)
+		return nil
+	}
 	switch kind {
 	case reflect.Struct:
 		for i := 0; i < objValue.NumField(); i++ {
