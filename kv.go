@@ -207,7 +207,8 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 	case reflect.Struct:
 		for i := 0; i < objValue.NumField(); i++ {
 			objType := objValue.Type()
-			if objType.Field(i).Name[:1] != strings.ToUpper(objType.Field(i).Name[:1]) {
+			_, description := objValue.Type().Field(i).Tag.Lookup("description")
+			if objType.Field(i).Name[:1] != strings.ToUpper(objType.Field(i).Name[:1]) || !description {
 				//if unexported field
 				continue
 			}
