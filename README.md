@@ -227,6 +227,115 @@ You can also store your whole configuration structure into the KV Store :
 	err := kv.StoreConfig(config)
 ```
 
+## Environment variables
+
+You can also extract part of your configuration from your process environment :
+
+```go
+        env := staert.NewEnvSource(prefix, sep string)
+        s.AddSource(env)
+```
+
+Doing this, staert will fetch from environment all values according to your
+config structure.
+
+Environment variables name are structured like this:
+
+```
+%PREFIX%%SEP%%MY%%SEP%%FIELD%%SEP%%NAME%
+```
+
+Field names are split by words according to camelCase, we rely on
+[github.com/fatih/camelcase](https://github.com/fatih/camelcase) to manage this.
+
+For instance if prefix is "MyApp" and separator is the '_' rune we'll have the following mapping:
+
+```go
+type AppStruct struct {
+    MyStringField string // => MYAPP_MY_STRING_FIELD
+    MyIntField    int    // => MYAPP_MY_INT_FIELD
+}
+```
+
+Type conversion for basic values (int-uint-ish, float, bool and stirng) are
+handled on the fly. If parsing fails, an error is raised explicitely.
+
+### Initialization
+
+It can be initalized like this :
+
+```go
+        env := staert.NewEnvSource(prefix, separator string)
+```
+
+It takes two arguments:
+
+- A prefix used in order to format environment variables names to fetch, if left
+  blank, no prefix will be applied to environment variables
+- A separator string, if left blank it will default to the "_" string
+
+### Embedded structures
+
+Embedded structures are supported, and environment variable name generation for a field
+will have exact same behaviour than normal struct field.
+
+For instance if we keep our previous example confifuration, we'll obtain the
+following mapping:
+
+```go
+type CommonConfig struct {
+    CommonString string // => MYAPP_COMMON_STRING
+}
+
+type AppConfig struct {
+    CommonConfig
+}
+```
+
+### Nested structures
+
+Nested structures are also supported, both by reference and values. However
+fields names are going to be prefixed with the field name referencing the
+nested structure:
+
+One more time, same configuration:
+
+```go
+
+type PtrNestedConfig struct {
+    AnArgument string // => MY_APP_FOO_AN_ARGUMENT
+}
+
+type ValueNestedConfig struct {
+    AnotherArgument string // => MY_APP_BAR_ANOTHER_ARGUMENT
+}
+
+type AppConfig struct {
+    Foo   *PtrNestedConfig
+    Bar   ValueNestedConfig
+}
+
+```
+
+### Referenced values
+
+You can also use pointer to values too in your config structs,
+those fields are going to be mapped exactly as a value.
+
+Aaaaand one last time with the same configuration :
+
+```go
+type AppConfig struct {
+  Groot *int32 // => MYAPP_GROOT
+}
+```
+
+### Known limitations
+
+- We, at the moment, don't support arrays and maps, they are ignored silently
+- Uninitialized config struct fields are, at the moment, ignored silently, ie if we
+  have a nil ptr to a value or a structure we are going to ignore it even if the
+  associated environement variable is set.
 
 ## Contributing
 1. Fork it!
