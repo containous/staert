@@ -27,7 +27,7 @@ We developed [Flæg](https://github.com/containous/flaeg) and Stært in order to
 	- Stært supports only one Command (the Root-Command)
 	- Flæg allows you to use many Commands
 	- Only Flæg will be used if a Sub-Command is called. (because Config type could be different from one Command to another)
-	- You can add Metadata `"parseAllSources" -> "true"` to a Sub-Command if you want to parse all sources (it requires the same Config type on the Sub-Command and the Root-Command)  
+	- You can add Metadata `"parseAllSources" -> "true"` to a Sub-Command if you want to parse all sources (it requires the same Config type on the Sub-Command and the Root-Command)
 
 ## Getting Started
 ### The configuration
@@ -56,7 +56,7 @@ type PointerSubConfiguration struct {
 }
 ```
 
-Let's initialize it: 
+Let's initialize it:
 ```go
  func main() {
 	//Init with default value
@@ -111,8 +111,8 @@ Add TOML and flæg sources
 ```go
     s.AddSource(toml)
     s.AddSource(f)
-``` 
-NB : You can change order, so that, flaeg configuration will overwrite toml one 
+```
+NB : You can change order, so that, flaeg configuration will overwrite toml one
 ### Load your configuration
 Just call LoadConfig function :
 ```go
@@ -120,9 +120,9 @@ Just call LoadConfig function :
     if err != nil {
 		//OOPS
 	}
-	//DO WHAT YOU WANT WITH loadedConfig 
+	//DO WHAT YOU WANT WITH loadedConfig
 	//OR CALL RUN FUNC
-``` 
+```
 
 ### You can call Run
 Run function will call the func `run()` from the command :
@@ -131,7 +131,7 @@ Run function will call the func `run()` from the command :
 		//OOPS
 	}
  }
-``` 
+```
  NB : If you didn't call `LoadConfig()` before, your func `run()` will use your original configuration
 ### Let's run example
 
@@ -139,7 +139,7 @@ TOML file `./toml/example.toml` :
 ```toml
 IntField= 2
 [PointerField]
-``` 
+```
 We can run the example program using folowing CLI arguments :
 ```
 $ ./example --stringfield=owerwrittenFromFlag --pointerfield.floatfield=55.55
@@ -149,7 +149,7 @@ PointerField contains:&{BoolField:true FloatField:55.55}
 
 ```
 
-## Full example : 
+## Full example :
 [Tagoæl](https://github.com/debovema/tagoael) is a trivial example which shows how Stært can be use.
 This funny golang progam takes its configuration from both TOML and Flaeg sources to display messages.
 ```shell
@@ -182,7 +182,7 @@ The package [libkv](https://github.com/docker/libkv) provides connection to many
 The whole configuration structure is stored, using architecture like this pattern :
  - Key : `<prefix1>/<prefix2>/.../<fieldNameLevel1>/<fieldNameLevel2>/.../<fieldName>`
  - Value : `<value>`
- 
+
 It handles :
  - All [mapstructure](https://github.com/mitchellh/mapstructure) features(`bool`, `int`, ... , Squashed Embedded Sub `struct`, Pointer).
  - Maps with pattern : `.../<MapFieldName>/<mapKey>` -> `<mapValue>` (Struct as key not supported)
@@ -191,7 +191,7 @@ It handles :
 Note : Hopefully, we provide the function `StoreConfig` to store your configuration structure ;)
 
 ### KvSource
-KvSource implements Source: 
+KvSource implements Source:
 
 ```go
 type KvSource struct {
@@ -200,7 +200,7 @@ type KvSource struct {
 }
 ```
 
-### Initialize 
+### Initialize
 It can be initialized like this :
 ```go
 	kv, err := staert.NewKvSource(backend store.Backend, addrs []string, options *store.Config, prefix string)
