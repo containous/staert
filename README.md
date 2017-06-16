@@ -27,7 +27,7 @@ We developed [Flæg](https://github.com/containous/flaeg) and Stært in order to
 	- Stært supports only one Command (the Root-Command)
 	- Flæg allows you to use many Commands
 	- Only Flæg will be used if a Sub-Command is called. (because Config type could be different from one Command to another)
-	- You can add Metadata `"parseAllSources" -> "true"` to a Sub-Command if you want to parse all sources (it requires the same Config type on the Sub-Command and the Root-Command)  
+	- You can add Metadata `"parseAllSources" -> "true"` to a Sub-Command if you want to parse all sources (it requires the same Config type on the Sub-Command and the Root-Command)
 
 ## Getting Started
 ### The configuration
@@ -56,7 +56,7 @@ type PointerSubConfiguration struct {
 }
 ```
 
-Let's initialize it: 
+Let's initialize it:
 ```go
  func main() {
 	//Init with default value
@@ -111,8 +111,8 @@ Add TOML and flæg sources
 ```go
     s.AddSource(toml)
     s.AddSource(f)
-``` 
-NB : You can change order, so that, flaeg configuration will overwrite toml one 
+```
+NB : You can change order, so that, flaeg configuration will overwrite toml one
 ### Load your configuration
 Just call LoadConfig function :
 ```go
@@ -120,9 +120,9 @@ Just call LoadConfig function :
     if err != nil {
 		//OOPS
 	}
-	//DO WHAT YOU WANT WITH loadedConfig 
+	//DO WHAT YOU WANT WITH loadedConfig
 	//OR CALL RUN FUNC
-``` 
+```
 
 ### You can call Run
 Run function will call the func `run()` from the command :
@@ -131,7 +131,7 @@ Run function will call the func `run()` from the command :
 		//OOPS
 	}
  }
-``` 
+```
  NB : If you didn't call `LoadConfig()` before, your func `run()` will use your original configuration
 ### Let's run example
 
@@ -139,7 +139,7 @@ TOML file `./toml/example.toml` :
 ```toml
 IntField= 2
 [PointerField]
-``` 
+```
 We can run the example program using folowing CLI arguments :
 ```
 $ ./example --stringfield=owerwrittenFromFlag --pointerfield.floatfield=55.55
@@ -149,7 +149,7 @@ PointerField contains:&{BoolField:true FloatField:55.55}
 
 ```
 
-## Full example : 
+## Full example :
 [Tagoæl](https://github.com/debovema/tagoael) is a trivial example which shows how Stært can be use.
 This funny golang progam takes its configuration from both TOML and Flaeg sources to display messages.
 ```shell
@@ -182,7 +182,7 @@ The package [libkv](https://github.com/docker/libkv) provides connection to many
 The whole configuration structure is stored, using architecture like this pattern :
  - Key : `<prefix1>/<prefix2>/.../<fieldNameLevel1>/<fieldNameLevel2>/.../<fieldName>`
  - Value : `<value>`
- 
+
 It handles :
  - All [mapstructure](https://github.com/mitchellh/mapstructure) features(`bool`, `int`, ... , Squashed Embedded Sub `struct`, Pointer).
  - Maps with pattern : `.../<MapFieldName>/<mapKey>` -> `<mapValue>` (Struct as key not supported)
@@ -191,7 +191,7 @@ It handles :
 Note : Hopefully, we provide the function `StoreConfig` to store your configuration structure ;)
 
 ### KvSource
-KvSource implements Source: 
+KvSource implements Source:
 
 ```go
 type KvSource struct {
@@ -200,7 +200,7 @@ type KvSource struct {
 }
 ```
 
-### Initialize 
+### Initialize
 It can be initialized like this :
 ```go
 	kv, err := staert.NewKvSource(backend store.Backend, addrs []string, options *store.Config, prefix string)
@@ -227,6 +227,115 @@ You can also store your whole configuration structure into the KV Store :
 	err := kv.StoreConfig(config)
 ```
 
+## Environment variables
+
+You can also extract part of your configuration from your process environment :
+
+```go
+        env := staert.NewEnvSource(prefix, sep string)
+        s.AddSource(env)
+```
+
+Doing this, staert will fetch from environment all values according to your
+config structure.
+
+Environment variables name are structured like this:
+
+```
+%PREFIX%%SEP%%MY%%SEP%%FIELD%%SEP%%NAME%
+```
+
+Field names are split by words according to camelCase, we rely on
+[github.com/fatih/camelcase](https://github.com/fatih/camelcase) to manage this.
+
+For instance if prefix is "MyApp" and separator is the '_' rune we'll have the following mapping:
+
+```go
+type AppStruct struct {
+    MyStringField string // => MYAPP_MY_STRING_FIELD
+    MyIntField    int    // => MYAPP_MY_INT_FIELD
+}
+```
+
+Type conversion for basic values (int-uint-ish, float, bool and stirng) are
+handled on the fly. If parsing fails, an error is raised explicitely.
+
+### Initialization
+
+It can be initalized like this :
+
+```go
+        env := staert.NewEnvSource(prefix, separator string)
+```
+
+It takes two arguments:
+
+- A prefix used in order to format environment variables names to fetch, if left
+  blank, no prefix will be applied to environment variables
+- A separator string, if left blank it will default to the "_" string
+
+### Embedded structures
+
+Embedded structures are supported, and environment variable name generation for a field
+will have exact same behaviour than normal struct field.
+
+For instance if we keep our previous example confifuration, we'll obtain the
+following mapping:
+
+```go
+type CommonConfig struct {
+    CommonString string // => MYAPP_COMMON_STRING
+}
+
+type AppConfig struct {
+    CommonConfig
+}
+```
+
+### Nested structures
+
+Nested structures are also supported, both by reference and values. However
+fields names are going to be prefixed with the field name referencing the
+nested structure:
+
+One more time, same configuration:
+
+```go
+
+type PtrNestedConfig struct {
+    AnArgument string // => MY_APP_FOO_AN_ARGUMENT
+}
+
+type ValueNestedConfig struct {
+    AnotherArgument string // => MY_APP_BAR_ANOTHER_ARGUMENT
+}
+
+type AppConfig struct {
+    Foo   *PtrNestedConfig
+    Bar   ValueNestedConfig
+}
+
+```
+
+### Referenced values
+
+You can also use pointer to values too in your config structs,
+those fields are going to be mapped exactly as a value.
+
+Aaaaand one last time with the same configuration :
+
+```go
+type AppConfig struct {
+  Groot *int32 // => MYAPP_GROOT
+}
+```
+
+### Known limitations
+
+- We, at the moment, don't support arrays and maps, they are ignored silently
+- Uninitialized config struct fields are, at the moment, ignored silently, ie if we
+  have a nil ptr to a value or a structure we are going to ignore it even if the
+  associated environement variable is set.
 
 ## Contributing
 1. Fork it!
