@@ -1,16 +1,25 @@
 language: go
 
 go:
-    - 1.6.2
+  - 1.7.x
+  - 1.8.x
+  - 1.9.x
+  - master
 
 sudo: false
 
+before_install:
+  - curl -sI https://github.com/golang/dep/releases/latest | grep -Fi Location  | tr -d '\r' | sed "s/tag/download/g" | awk -F " " '{ print $2 "/dep-linux-amd64"}' | wget --output-document=$GOPATH/bin/dep -i -
+  - chmod +x $GOPATH/bin/dep
+
 install:
-    - go get -d -v ./...
-    - go get github.com/mattn/goveralls
+  - dep ensure -v
+  - go get github.com/mattn/goveralls
 
 script:
-    - GOOS=darwin go build
-    - GOOS=windows go build
-    - GOOS=linux go build
-    - $HOME/gopath/bin/goveralls -service=travis-ci
+  - PKGS=$(go list ./... | grep -v '/vendor/')
+  - go test -v -cover $PKGS
+  - GOOS=darwin go build
+  - GOOS=windows go build
+  - GOOS=linux go build
+  - $HOME/gopath/bin/goveralls -service=travis-ci
