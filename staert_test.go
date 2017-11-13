@@ -3,20 +3,21 @@ package staert
 import (
 	"bytes"
 	"fmt"
-	"github.com/containous/flaeg"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/containous/flaeg"
 )
 
 //StructPtr : Struct with pointers
 type StructPtr struct {
-	PtrStruct1    *Struct1      `description:"Enable Struct1"`
-	PtrStruct2    *Struct2      `description:"Enable Struct1"`
-	DurationField time.Duration `description:"Duration Field"`
+	PtrStruct1    *Struct1       `description:"Enable Struct1"`
+	PtrStruct2    *Struct2       `description:"Enable Struct1"`
+	DurationField flaeg.Duration `description:"Duration Field"`
 }
 
 //Struct1 : Struct with pointer
@@ -39,7 +40,7 @@ type Struct3 struct {
 	S3Float64 float64 `description:"Struct 3 float64"`
 }
 
-func TestFleagSourceNoArgs(t *testing.T) {
+func TestFlaegSourceNoArgs(t *testing.T) {
 	//use buffer instead of stdout
 	var b bytes.Buffer
 	//Init
@@ -65,7 +66,7 @@ func TestFleagSourceNoArgs(t *testing.T) {
 			S2Bool:   false,
 		},
 	}
-	args := []string{}
+	var args []string
 
 	//Test
 	rootCmd := &flaeg.Command{
@@ -81,8 +82,9 @@ func TestFleagSourceNoArgs(t *testing.T) {
 	s := NewStaert(rootCmd)
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
+
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 
 	//Check
@@ -99,7 +101,7 @@ func TestFleagSourceNoArgs(t *testing.T) {
 	}
 }
 
-func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
+func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
 	//use buffer instead of stdout
 	var b bytes.Buffer
 	//Init
@@ -144,7 +146,7 @@ func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//Check
 	check := &StructPtr{
@@ -168,7 +170,7 @@ func TestFleagSourcePtrUnderPtrArgs(t *testing.T) {
 	}
 }
 
-func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
+func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 	//use buffer instead of stdout
 	var b bytes.Buffer
 	//Init
@@ -213,7 +215,7 @@ func TestFleagSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//Check
 	check := &StructPtr{
@@ -275,7 +277,7 @@ func TestTomlSourceNothing(t *testing.T) {
 	s.AddSource(toml)
 
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//Check
 	check := &StructPtr{
@@ -334,7 +336,7 @@ func TestTomlSourceTrivial(t *testing.T) {
 	s.AddSource(toml)
 
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//Check
 	check := &StructPtr{
@@ -395,7 +397,7 @@ func TestTomlSourcePointer(t *testing.T) {
 	s.AddSource(toml)
 
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//Check
 	check := &StructPtr{
@@ -457,10 +459,10 @@ func TestTomlSourceFieldUnderPointer(t *testing.T) {
 	s.AddSource(toml)
 
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
-	//Check
-	check := &StructPtr{
+
+	expected := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    11,
 			S1String: "S1StringDefaultPointersConfig",
@@ -469,9 +471,9 @@ func TestTomlSourceFieldUnderPointer(t *testing.T) {
 		DurationField: flaeg.Duration(42 * time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, check) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check.PtrStruct1, config.PtrStruct1)
+	if !reflect.DeepEqual(rootCmd.Config, expected) {
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, config)
+		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected.PtrStruct1, config.PtrStruct1)
 	}
 }
 
@@ -518,7 +520,7 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 	s.AddSource(toml)
 
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//Check
 	check := &StructPtr{
@@ -583,7 +585,7 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 	s.AddSource(toml)
 
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//Check
 	check := &StructPtr{
@@ -648,7 +650,7 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 
 	//Check
@@ -712,7 +714,7 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 
 	//Check
@@ -779,7 +781,7 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//Check
 	check := &StructPtr{
@@ -849,7 +851,7 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 
 	//Check
@@ -921,7 +923,7 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 	toml := NewTomlSource("nothing", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 
 	//Check
@@ -986,7 +988,7 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 	toml := NewTomlSource("nothing", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 
 	//Check
@@ -1056,7 +1058,7 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 	toml := NewTomlSource("trivial", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 
 	//Check
@@ -1080,7 +1082,7 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 
 }
 
-func TestRunFleagFieldUnderPtrUnderPtr1Command(t *testing.T) {
+func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
 	//use buffer instead of stdout
 	var b bytes.Buffer
 	//Init
@@ -1140,10 +1142,10 @@ func TestRunFleagFieldUnderPtrUnderPtr1Command(t *testing.T) {
 	s.AddSource(fs)
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	if err := s.Run(); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//check buffer
 	checkB := `Run with config`
@@ -1157,7 +1159,7 @@ type VersionConfig struct {
 	Version string `short:"v" description:"Version"`
 }
 
-func TestRunFleagFieldUnderPtrUnderPtr2Command(t *testing.T) {
+func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 	//use buffer instead of stdout
 	var b bytes.Buffer
 	//Init
@@ -1240,10 +1242,10 @@ func TestRunFleagFieldUnderPtrUnderPtr2Command(t *testing.T) {
 	//check in command run func
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	if err := s.Run(); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//check buffer
 	checkB := `Run with config`
@@ -1252,7 +1254,7 @@ func TestRunFleagFieldUnderPtrUnderPtr2Command(t *testing.T) {
 	}
 }
 
-func TestRunFleagVersion2CommandCallVersion(t *testing.T) {
+func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 	//use buffer instead of stdout
 	var b bytes.Buffer
 	//Init
@@ -1338,10 +1340,10 @@ func TestRunFleagVersion2CommandCallVersion(t *testing.T) {
 	//check in command run func
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	if err := s.Run(); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//check buffer
 	checkB := `Version 2.2beta`
@@ -1441,10 +1443,10 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 	//check in command run func
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	if err := s.Run(); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	//check buffer
 	checkB := `Run with config :`
@@ -1513,7 +1515,7 @@ func TestTomlSourceErrorFileNotFound(t *testing.T) {
 func TestPreprocessDir(t *testing.T) {
 	thisPath, err := filepath.Abs(".")
 	if err != nil {
-		t.Errorf("Error: %s", err.Error())
+		t.Errorf("Error: %v", err)
 	}
 	checkMap := map[string]string{
 		".":                   thisPath,
@@ -1526,7 +1528,7 @@ func TestPreprocessDir(t *testing.T) {
 	for in, check := range checkMap {
 		out, err := preprocessDir(in)
 		if err != nil {
-			t.Errorf("Error: %s", err.Error())
+			t.Errorf("Error: %v", err)
 		}
 		if check != out {
 			t.Errorf("input %s\nexpected %s\n got %s", in, check, out)
@@ -1541,7 +1543,7 @@ func TestFindFile(t *testing.T) {
 	//check
 	thisPath, err := filepath.Abs(".")
 	if err != nil {
-		t.Errorf("Error: %s", err.Error())
+		t.Errorf("Error: %v", err)
 	}
 	expected := thisPath + "/toml/nothing.toml"
 	if result != expected {
@@ -1580,7 +1582,7 @@ func TestTomlMissingCustomParser(t *testing.T) {
 	s.AddSource(toml)
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	if err := s.Run(); err != nil {
 		t.Errorf("Error :%s", err)
@@ -1725,10 +1727,10 @@ func TestFlaegTomlSubCommandParseAllSources(t *testing.T) {
 	s.AddSource(fs)
 	_, err := s.LoadConfig()
 	if err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 	if err = s.Run(); err != nil {
-		t.Errorf("Error %s", err.Error())
+		t.Errorf("Error %v", err)
 	}
 
 	//test
