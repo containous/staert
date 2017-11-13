@@ -351,7 +351,7 @@ func TestKvSourceEmpty(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: time.Second,
+		DurationField: flaeg.Duration(time.Second),
 	}
 
 	//Test
@@ -382,7 +382,7 @@ func TestKvSourceEmpty(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: time.Second,
+		DurationField: flaeg.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(check, rootCmd.Config) {
@@ -457,7 +457,7 @@ func TestIntegrationMapstructureWithDecodeHookPointer(t *testing.T) {
 		PtrStruct1: &Struct1{
 			S1Int: 28,
 		},
-		DurationField: time.Nanosecond * 28,
+		DurationField: flaeg.Duration(28 * time.Nanosecond),
 	}
 
 	if !reflect.DeepEqual(check, config) {
@@ -484,7 +484,7 @@ func TestIntegrationMapstructureInitedPtrReset(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: time.Nanosecond * 28,
+		DurationField: flaeg.Duration(28 * time.Second),
 	}
 
 	//test
@@ -505,9 +505,10 @@ func TestIntegrationMapstructureInitedPtrReset(t *testing.T) {
 	//check
 	check := StructPtr{
 		PtrStruct1: &Struct1{
-			S1Int: 24,
+			S1Int:    24,
+			S1String: "S1StringInitConfig",
 		},
-		DurationField: time.Nanosecond * 28,
+		DurationField: flaeg.Duration(28 * time.Second),
 	}
 
 	if !reflect.DeepEqual(check, config) {
@@ -559,7 +560,7 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		PtrStruct1: &Struct1{
 			S1Int: 28,
 		},
-		DurationField: time.Nanosecond * 28,
+		DurationField: flaeg.Duration(28 * time.Nanosecond),
 	}
 
 	if !reflect.DeepEqual(check, rootCmd.Config) {
@@ -684,7 +685,7 @@ func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 			S1String:     "S1StringInitConfig",
 			S1PtrStruct3: &Struct3{},
 		},
-		DurationField: 21 * time.Second,
+		DurationField: flaeg.Duration(21 * time.Second),
 	}
 
 	if !reflect.DeepEqual(check, rootCmd.Config) {
