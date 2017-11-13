@@ -1,5 +1,5 @@
 # This is a TOML document. Boom.
-DurationField= 42000000000
+DurationField= 42
 [PtrStruct1]
 # S1Int= 28
 # S1String=  "S1StringToml"
