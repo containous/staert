@@ -17,7 +17,8 @@
   branch = "master"
   name = "github.com/docker/libkv"
   packages = [".","store"]
-  revision = "93ab0e6c056d325dfbb11e1d58a3b4f5f62e7f3c"
+  revision = "5e4bb288a9a74320bb03f5c18d6bdbab0d8049de"
+  source = "github.com/abronan/libkv"
 
 [[projects]]
   branch = "master"
@@ -34,6 +35,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3aadb4ce7a5f277e06175bae15447f753d97735ef990590e17e86aec05ca528b"
+  inputs-digest = "c19cc2818b19b1ea5e33bc24664cd8c6fc9f1446ae62a71a500dbb1cbef9b235"
   solver-name = "gps-cdcl"
   solver-version = 1

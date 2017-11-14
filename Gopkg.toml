@@ -32,6 +32,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/docker/libkv"
+  source = "github.com/abronan/libkv"
 
 [[constraint]]
   branch = "master"
