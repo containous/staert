@@ -288,7 +288,7 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 
 // ListRecursive lists all key value children under key
 func (kv *KvSource) ListRecursive(key string, pairs map[string][]byte) error {
-	pairsN1, err := kv.List(key)
+	pairsN1, err := kv.List(key, nil)
 	if err == store.ErrKeyNotFound {
 		return nil
 	}
@@ -296,7 +296,7 @@ func (kv *KvSource) ListRecursive(key string, pairs map[string][]byte) error {
 		return err
 	}
 	if len(pairsN1) == 0 {
-		pairLeaf, err := kv.Get(key)
+		pairLeaf, err := kv.Get(key, nil)
 		if err != nil {
 			return err
 		}

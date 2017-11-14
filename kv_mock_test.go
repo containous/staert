@@ -19,7 +19,7 @@ func (s *Mock) Put(key string, value []byte, opts *store.WriteOptions) error {
 	return nil
 }
 
-func (s *Mock) Get(key string) (*store.KVPair, error) {
+func (s *Mock) Get(key string, options *store.ReadOptions) (*store.KVPair, error) {
 	if s.Error {
 		return nil, errors.New("error")
 	}
@@ -36,17 +36,17 @@ func (s *Mock) Delete(key string) error {
 }
 
 // Exists mock
-func (s *Mock) Exists(key string) (bool, error) {
+func (s *Mock) Exists(key string, options *store.ReadOptions) (bool, error) {
 	return false, errors.New("exists not supported")
 }
 
 // Watch mock
-func (s *Mock) Watch(key string, stopCh <-chan struct{}) (<-chan *store.KVPair, error) {
+func (s *Mock) Watch(key string, stopCh <-chan struct{}, options *store.ReadOptions) (<-chan *store.KVPair, error) {
 	return nil, errors.New("watch not supported")
 }
 
 // WatchTree mock
-func (s *Mock) WatchTree(prefix string, stopCh <-chan struct{}) (<-chan []*store.KVPair, error) {
+func (s *Mock) WatchTree(prefix string, stopCh <-chan struct{}, options *store.ReadOptions) (<-chan []*store.KVPair, error) {
 	return s.WatchTreeMethod(), nil
 }
 
@@ -56,7 +56,7 @@ func (s *Mock) NewLock(key string, options *store.LockOptions) (store.Locker, er
 }
 
 // List mock
-func (s *Mock) List(prefix string) ([]*store.KVPair, error) {
+func (s *Mock) List(prefix string, options *store.ReadOptions) ([]*store.KVPair, error) {
 	if s.Error {
 		return nil, errors.New("error")
 	}
