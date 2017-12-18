@@ -1559,7 +1559,7 @@ func TestFindFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	expected := thisPath + "/toml/nothing.toml"
+	expected := filepath.Join(thisPath, "toml", "nothing.toml")
 	if result != expected {
 		t.Errorf("Expected %s\ngot %s", expected, result)
 	}
@@ -1612,7 +1612,7 @@ func TestFindFileSliceFileAndDirLastIf(t *testing.T) {
 
 	//check
 	thisPath, _ := filepath.Abs(".")
-	check := thisPath + "/toml/trivial.toml"
+	check := filepath.Join(thisPath, "/toml/trivial.toml")
 	if result := findFile("trivial", []string{"./toml/", "/any/other/path"}); result != check {
 		t.Errorf("Expected %s\nGot %s", check, result)
 	}
@@ -1622,7 +1622,7 @@ func TestFindFileSliceFileAndDirFirstIf(t *testing.T) {
 	inDirNfile := []string{"$PWD/toml/nothing.toml"}
 	//check
 	thisPath, _ := filepath.Abs(".")
-	check := thisPath + "/toml/nothing.toml"
+	check := filepath.Join(thisPath, "/toml/nothing.toml")
 	if result := findFile(inFilename, inDirNfile); result != check {
 		t.Errorf("Expected %s\nGot %s", check, result)
 	}

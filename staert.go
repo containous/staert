@@ -117,7 +117,8 @@ func findFile(filename string, dirNfile []string) string {
 			if fileInfo, err := os.Stat(fullPath); err == nil && !fileInfo.IsDir() {
 				return fullPath
 			}
-			fullPath = fullPath + "/" + filename + ".toml"
+
+			fullPath = filepath.Join(fullPath, filename+".toml")
 			if fileInfo, err := os.Stat(fullPath); err == nil && !fileInfo.IsDir() {
 				return fullPath
 			}
