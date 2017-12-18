@@ -1519,9 +1519,7 @@ func TestPreprocessDir(t *testing.T) {
 	}
 	checkMap := map[string]string{
 		".":                   thisPath,
-		"$HOME":               os.Getenv("HOME"),
 		"dir1/dir2":           thisPath + "/dir1/dir2",
-		"$HOME/dir1/dir2":     os.Getenv("HOME") + "/dir1/dir2",
 		"/etc/test":           "/etc/test",
 		"/etc/dir1/file1.ext": "/etc/dir1/file1.ext",
 	}
@@ -1530,11 +1528,27 @@ func TestPreprocessDir(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error: %v", err)
 		}
-		if check != out {
-			t.Errorf("input %s\nexpected %s\n got %s", in, check, out)
+
+		//always check against the absolute path
+		checkAbs, _ := filepath.Abs(check)
+
+		if checkAbs != out {
+			t.Errorf("input %s\nexpected %s\n got %s", in, checkAbs, out)
 		}
 	}
 
+}
+func TestPreprocessDirEnvVariablesExpansions(t *testing.T) {
+	expected, _ := filepath.Abs("/some/path/my/path")
+	in := "$TEST_ENV_VARIABLE/my/path"
+	os.Setenv("TEST_ENV_VARIABLE", "/some/path")
+	out, err := preprocessDir(in)
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+	if out != expected {
+		t.Errorf("input %s\nexpected %s\n got %s", in, expected, out)
+	}
 }
 
 func TestFindFile(t *testing.T) {
