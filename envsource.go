@@ -1,7 +1,6 @@
 package staert
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -20,7 +19,7 @@ type Loader interface {
 	LoadConfig(config interface{}) error
 }
 
-// SourceLoader, can be both a staert.Source and a staert.Loader
+// SourceLoader : can be both a staert.Source and a staert.Loader
 type SourceLoader interface {
 	Loader
 	Source
@@ -116,9 +115,8 @@ func (e *envSource) analyzeValue(valType reflect.Type, fieldPath path) ([]*envVa
 	case reflect.Struct:
 		res, err = e.analyzeStruct(valType, fieldPath)
 	case reflect.Invalid, reflect.Chan, reflect.Func, reflect.Interface, reflect.UnsafePointer:
-		err = errors.New(
-			fmt.Sprintf("type %s is not supported by EnvSource", valType.Name()),
-		)
+		err = fmt.Errorf("type %s is not supported by EnvSource", valType.Name())
+
 	default:
 		res = e.loadValue(fieldPath)
 	}
@@ -145,23 +143,19 @@ func (e *envSource) analyzeIndexedType(valType reflect.Type, fieldPath path) ([]
 			index, err := strconv.Atoi(key)
 
 			if err != nil {
-				return res, errors.New(
-					fmt.Sprintf(
-						key,
-						varName,
-					),
+				return res, fmt.Errorf(
+					key,
+					varName,
 				)
 			}
 
 			if valType.Kind() == reflect.Array &&
 				index >= valType.Len() {
-				return res, errors.New(
-					fmt.Sprintf(
-						"Detected key (%s) from variable %s is >= to array length %d",
-						key,
-						varName,
-						valType.Len(),
-					),
+				return res, fmt.Errorf(
+					"Detected key (%s) from variable %s is >= to array length %d",
+					key,
+					varName,
+					valType.Len(),
 				)
 			}
 		}
@@ -226,22 +220,18 @@ func (e *envSource) allocate(value reflect.Value) (reflect.Value, error) {
 func (e *envSource) setValue(value reflect.Value, strValue string) error {
 
 	if !value.CanSet() {
-		return errors.New(
-			fmt.Sprintf(
-				"Value [%v] cannot be set",
-				value,
-			),
+		return fmt.Errorf(
+			"Value [%v] cannot be set",
+			value,
 		)
 	}
 
 	parser, ok := e.parsers[value.Type()]
 
 	if !ok {
-		return errors.New(
-			fmt.Sprintf(
-				"Unsupported type [%s], please consider adding custom parser",
-				value.Type().Name(),
-			),
+		return fmt.Errorf(
+			"Unsupported type [%s], please consider adding custom parser",
+			value.Type().Name(),
 		)
 	}
 
