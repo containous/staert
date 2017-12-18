@@ -105,14 +105,8 @@ func (ts *TomlSource) ConfigFileUsed() string {
 
 func preprocessDir(dirIn string) (string, error) {
 	dirOut := dirIn
-	if strings.HasPrefix(dirIn, "$") {
-		end := strings.Index(dirIn, string(os.PathSeparator))
-		if end == -1 {
-			end = len(dirIn)
-		}
-		dirOut = os.Getenv(dirIn[1:end]) + dirIn[end:]
-	}
-	dirOut, err := filepath.Abs(dirOut)
+	expanded := os.ExpandEnv(dirIn)
+	dirOut, err := filepath.Abs(expanded)
 	return dirOut, err
 }
 
