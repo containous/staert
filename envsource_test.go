@@ -6,7 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/containous/flaeg"
+	"github.com/containous/flaeg/parse"
 )
 
 func setupEnv(env map[string]string) {
@@ -88,7 +88,7 @@ func testAnalyzeStructShouldFail(t *testing.T, expectation, result sortableEnvVa
 }
 
 func TestAnalyzeStruct(t *testing.T) {
-	subject := &envSource{"", "_", map[reflect.Type]flaeg.Parser{}}
+	subject := &envSource{"", "_", map[reflect.Type]parse.Parser{}}
 
 	testCases := []struct {
 		Label       string
@@ -536,7 +536,7 @@ func TestEnvVarFromPath(t *testing.T) {
 			subject := &envSource{
 				testCase.Prefix,
 				testCase.Separator,
-				map[reflect.Type]flaeg.Parser{},
+				map[reflect.Type]parse.Parser{},
 			}
 
 			result := subject.envVarFromPath(testCase.Path)
@@ -551,7 +551,7 @@ func TestEnvVarFromPath(t *testing.T) {
 }
 
 func TestNextLevelKeys(t *testing.T) {
-	subject := &envSource{"", "_", map[reflect.Type]flaeg.Parser{}}
+	subject := &envSource{"", "_", map[reflect.Type]parse.Parser{}}
 	testCases := []struct {
 		Label       string
 		Prefix      string
@@ -605,7 +605,7 @@ func TestNextLevelKeys(t *testing.T) {
 
 func TestEnvVarsWithPrefix(t *testing.T) {
 
-	subject := &envSource{"", "_", map[reflect.Type]flaeg.Parser{}}
+	subject := &envSource{"", "_", map[reflect.Type]parse.Parser{}}
 
 	testCases := []struct {
 		Label       string
@@ -669,7 +669,7 @@ func TestUnique(t *testing.T) {
 }
 
 func TestKeyFromEnvVar(t *testing.T) {
-	subject := &envSource{"", "_", map[reflect.Type]flaeg.Parser{}}
+	subject := &envSource{"", "_", map[reflect.Type]parse.Parser{}}
 	testCases := []struct {
 		Label       string
 		Prefix      string
@@ -714,7 +714,7 @@ func TestAssignValues(t *testing.T) {
 	subject := &envSource{
 		"",
 		"_",
-		map[reflect.Type]flaeg.Parser{
+		map[reflect.Type]parse.Parser{
 			reflect.TypeOf(""): &stringParserValue,
 		},
 	}

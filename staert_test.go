@@ -11,13 +11,14 @@ import (
 	"time"
 
 	"github.com/containous/flaeg"
+	"github.com/containous/flaeg/parse"
 )
 
 //StructPtr : Struct with pointers
 type StructPtr struct {
 	PtrStruct1    *Struct1       `description:"Enable Struct1"`
 	PtrStruct2    *Struct2       `description:"Enable Struct1"`
-	DurationField flaeg.Duration `description:"Duration Field"`
+	DurationField parse.Duration `description:"Duration Field"`
 }
 
 //Struct1 : Struct with pointer
@@ -49,7 +50,7 @@ func TestFlaegSourceNoArgs(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -93,7 +94,7 @@ func TestFlaegSourceNoArgs(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -110,7 +111,7 @@ func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -157,7 +158,7 @@ func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
 				S3Float64: 11.11,
 			},
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -179,7 +180,7 @@ func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -226,7 +227,7 @@ func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 				S3Float64: 55.55,
 			},
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -243,7 +244,7 @@ func TestTomlSourceNothing(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -285,7 +286,7 @@ func TestTomlSourceNothing(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -302,7 +303,7 @@ func TestTomlSourceTrivial(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -345,7 +346,7 @@ func TestTomlSourceTrivial(t *testing.T) {
 			S1String: "S1StringDefaultPointersConfig",
 			S1Bool:   true,
 		},
-		DurationField: flaeg.Duration(28 * time.Second),
+		DurationField: parse.Duration(28 * time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -363,7 +364,7 @@ func TestTomlSourcePointer(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -410,7 +411,7 @@ func TestTomlSourcePointer(t *testing.T) {
 			S2String: "S2StringDefaultPointersConfig",
 			S2Bool:   false,
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -425,7 +426,7 @@ func TestTomlSourceFieldUnderPointer(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -468,7 +469,7 @@ func TestTomlSourceFieldUnderPointer(t *testing.T) {
 			S1String: "S1StringDefaultPointersConfig",
 			S1Bool:   true,
 		},
-		DurationField: flaeg.Duration(42 * time.Second),
+		DurationField: parse.Duration(42 * time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, expected) {
@@ -486,7 +487,7 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -532,7 +533,7 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 				S3Float64: 11.11,
 			},
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -551,7 +552,7 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -596,7 +597,7 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 				S3Float64: 28.28,
 			},
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -613,7 +614,7 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -659,7 +660,7 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -677,7 +678,7 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -726,7 +727,7 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 				S3Float64: 28.28,
 			},
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -744,7 +745,7 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -790,7 +791,7 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 			S1String: "S1StringDefaultPointersConfig",
 			S1Bool:   true,
 		},
-		DurationField: flaeg.Duration(28 * time.Second),
+		DurationField: parse.Duration(28 * time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -810,7 +811,7 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -869,7 +870,7 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 			S2String: "S2StringFlaeg",
 			S2Bool:   false,
 		},
-		DurationField: flaeg.Duration(55 * time.Second),
+		DurationField: parse.Duration(55 * time.Second),
 	}
 	if !reflect.DeepEqual(rootCmd.Config, check) {
 		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
@@ -886,7 +887,7 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -932,7 +933,7 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -950,7 +951,7 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1000,7 +1001,7 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 				S3Float64: 55.55,
 			},
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(rootCmd.Config, check) {
@@ -1018,7 +1019,7 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1068,7 +1069,7 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 			S1String: "S1StringDefaultPointersConfig",
 			S1Bool:   true,
 		},
-		DurationField: flaeg.Duration(28 * time.Second),
+		DurationField: parse.Duration(28 * time.Second),
 		PtrStruct2: &Struct2{
 			S2Int64:  22,
 			S2String: "S2StringFlaeg",
@@ -1091,7 +1092,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1128,7 +1129,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
 						S3Float64: 55.55,
 					},
 				},
-				DurationField: flaeg.Duration(time.Second),
+				DurationField: parse.Duration(time.Second),
 			}
 
 			if !reflect.DeepEqual(config, check) {
@@ -1168,7 +1169,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1207,7 +1208,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 						S3Float64: 55.55,
 					},
 				},
-				DurationField: flaeg.Duration(time.Second),
+				DurationField: parse.Duration(time.Second),
 			}
 
 			if !reflect.DeepEqual(config, check) {
@@ -1263,7 +1264,7 @@ func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1305,7 +1306,7 @@ func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 						S3Float64: 55.55,
 					},
 				},
-				DurationField: flaeg.Duration(time.Second),
+				DurationField: parse.Duration(time.Second),
 			}
 
 			if !reflect.DeepEqual(config, check) {
@@ -1361,7 +1362,7 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1401,7 +1402,7 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 					S1String: "S1StringDefaultPointersConfig",
 					S1Bool:   true,
 				},
-				DurationField: flaeg.Duration(28 * time.Second),
+				DurationField: parse.Duration(28 * time.Second),
 				PtrStruct2: &Struct2{
 					S2Int64:  22,
 					S2String: "S2StringFlaeg",
@@ -1465,7 +1466,7 @@ func TestTomlSourceErrorFileNotFound(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1636,7 +1637,7 @@ func TestRunWithoutLoadConfig(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	defaultPointersConfig := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1681,7 +1682,7 @@ func TestRunWithoutLoadConfig(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 	if !reflect.DeepEqual(rootCmd.Config, check) {
 		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, rootCmd.Config)
