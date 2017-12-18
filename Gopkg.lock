@@ -33,6 +33,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/fatih/camelcase"
+  packages = ["."]
+  revision = "44e46d280b43ec1531bb25252440e34f1b800b65"
+
+[[projects]]
+  branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "06020f85339e21b2478f756a78e295255ffa4d6a"
@@ -61,6 +67,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2c78b77b71078e30b78c5b9c38f85abd0867ed09b60445c6dde538f93de3e753"
+  inputs-digest = "5a20b17b253088a8fa99c458ef4cbff43d64e82e2163c9760a72359662219895"
   solver-name = "gps-cdcl"
   solver-version = 1
