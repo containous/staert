@@ -615,15 +615,15 @@ func TestEnvVarsWithPrefix(t *testing.T) {
 	}{
 		{
 			"WithPrefix",
-			"APP",
+			"STAERT_APP",
 			map[string]string{
-				"STRING_VALUE":   "FOOO",
-				"INT_VALUE":      "10",
-				"BOOL_VALUE":     "true",
-				"APP_BOOL_VALUE": "true",
-				"APP_BAR_VALUE":  "true",
+				"STRING_VALUE":          "FOOO",
+				"INT_VALUE":             "10",
+				"BOOL_VALUE":            "true",
+				"STAERT_APP_BOOL_VALUE": "true",
+				"STAERT_APP_BAR_VALUE":  "true",
 			},
-			[]string{"APP_BOOL_VALUE", "APP_BAR_VALUE"},
+			[]string{"STAERT_APP_BAR_VALUE", "STAERT_APP_BOOL_VALUE"},
 		},
 	}
 
@@ -631,8 +631,9 @@ func TestEnvVarsWithPrefix(t *testing.T) {
 		t.Run(testCase.Label, func(t *testing.T) {
 			setupEnv(testCase.Env)
 			res := subject.envVarsWithPrefix(testCase.Prefix)
+			sort.Strings(res)
 			for i, envVar := range testCase.Expectation {
-				if envVar != res[i] {
+				if res != nil && envVar != res[i] {
 					t.Logf("Invalid env variableName, expected [%s] got [%s]", envVar, res[i])
 					t.Fail()
 				}
