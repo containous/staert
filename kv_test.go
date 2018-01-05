@@ -1,6 +1,7 @@
 package staert
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"reflect"
 	"strings"
@@ -1091,6 +1092,63 @@ func TestConvertPairs5Levels(t *testing.T) {
 		if !reflect.DeepEqual(p.Value, expected[p.Key]) {
 			t.Fatalf("Key : %s\nExpected %s\nGot %s", p.Key, expected[p.Key], p.Value)
 		}
+	}
+}
+
+type StrSlices struct {
+	Bytes                        []byte
+	Ints                         []int
+	Bools                        []bool
+	Strings                      []string
+	StringsWithCommaAndQuotation []string
+}
+
+func TestSliceTypes(t *testing.T) {
+	config := StrSlices{}
+
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{Key: "test/bytes", Value: []byte(base64.StdEncoding.EncodeToString([]byte("hello")))},
+				{Key: "test/ints", Value: []byte("1,2,3")},
+				{Key: "test/bools", Value: []byte("true,false,true")},
+				{Key: "test/strings", Value: []byte("hi,1,world")},
+				{Key: "test/stringswithcommaandquotation", Value: []byte("first, \"second\", \"with, comma\"")},
+			},
+		},
+		"test",
+	}
+
+	cmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                &config,
+		DefaultPointersConfig: &config,
+		Run: func() error { return nil },
+	}
+
+	if _, err := kv.Parse(cmd); err != nil {
+		t.Fatalf("Error %s", err)
+	}
+
+	expected := &StrSlices{
+		Bytes:   []byte("hello"),
+		Ints:    []int{1, 2, 3},
+		Bools:   []bool{true, false, true},
+		Strings: []string{"hi", "1", "world"},
+		StringsWithCommaAndQuotation: []string{"first", "second", "with, comma"},
+	}
+
+	if !reflect.DeepEqual(expected, cmd.Config) {
+		actualJSON, err := json.Marshal(cmd.Config)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
+		expectedJSON, err := json.Marshal(expected)
+		if err != nil {
+			t.Fatalf("Error: %v", err)
+		}
+		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", expectedJSON, actualJSON)
 	}
 }
 

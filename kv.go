@@ -3,6 +3,7 @@ package staert
 import (
 	"encoding"
 	"encoding/base64"
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"reflect"
@@ -106,8 +107,6 @@ func processKV(key string, v []byte, raw map[string]interface{}) (map[string]int
 }
 
 func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (interface{}, error) {
-	// TODO : Array support
-
 	// custom unmarshaler
 	textUnmarshalerType := reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
 	if toType.Implements(textUnmarshalerType) {
@@ -155,11 +154,15 @@ func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (i
 
 			return dataOutput, nil
 		} else if fromType.Kind() == reflect.String {
-			b, err := base64.StdEncoding.DecodeString(data.(string))
-			if err != nil {
-				return nil, err
+			str := data.(string)
+			b, err := base64.StdEncoding.DecodeString(str)
+			if err == nil {
+				return b, nil
 			}
-			return b, nil
+
+			reader := csv.NewReader(strings.NewReader(str))
+			reader.TrimLeadingSpace = true
+			return reader.Read()
 		}
 	}
 	return data, nil
