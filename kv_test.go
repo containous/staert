@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/abronan/valkeyrie/store"
 	"github.com/containous/flaeg"
-	"github.com/docker/libkv/store"
 	"github.com/mitchellh/mapstructure"
 )
 
