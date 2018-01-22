@@ -31,9 +31,8 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/docker/libkv"
-  source = "github.com/abronan/libkv"
+  name = "github.com/mitchellh/mapstructure"
 
 [[constraint]]
   branch = "master"
-  name = "github.com/mitchellh/mapstructure"
+  name = "github.com/abronan/valkeyrie"
