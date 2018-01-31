@@ -9,15 +9,15 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/containous/flaeg"
-  packages = [".","parse"]
-  revision = "c4797734e8b31bd78dc2cc5d88d510decdee2d7e"
+  name = "github.com/abronan/valkeyrie"
+  packages = [".","store"]
+  revision = "063d875e3c5fd734fa2aa12fac83829f62acfc70"
 
 [[projects]]
   branch = "master"
   name = "github.com/containous/flaeg"
-  packages = ["."]
-  revision = "4b6f66624dce34a226f080b414c4705ea8731bc5"
+  packages = [".","parse"]
+  revision = "c4797734e8b31bd78dc2cc5d88d510decdee2d7e"
 
 [[projects]]
   branch = "master"
@@ -40,6 +40,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b9988ecf666c436d27f0430830df8cecf007e94926e566238aaeb410deab01fa"
+  inputs-digest = "ffc28556ec3ec497812696810606e7f0ba6ec6d08b62470dafa16151f099c7c9"
   solver-name = "gps-cdcl"
   solver-version = 1
