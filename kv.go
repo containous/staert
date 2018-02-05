@@ -1,10 +1,13 @@
 package staert
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"reflect"
 	"sort"
 	"strconv"
@@ -155,11 +158,21 @@ func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (i
 
 			return dataOutput, nil
 		} else if fromType.Kind() == reflect.String {
-			b, err := base64.StdEncoding.DecodeString(data.(string))
+			buffer := bytes.NewBuffer([]byte(data.(string)))
+			reader, err := gzip.NewReader(buffer)
+			if err != nil {
+				decodedData, err := base64.StdEncoding.DecodeString(data.(string))
+				if err != nil {
+					return nil, err
+				}
+				return decodedData, nil
+			}
+			defer reader.Close()
+			decodedData, err := ioutil.ReadAll(reader)
 			if err != nil {
 				return nil, err
 			}
-			return b, nil
+			return decodedData, nil
 		}
 	}
 	return data, nil
@@ -263,7 +276,11 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 	case reflect.Array, reflect.Slice:
 		// Byte slices get special treatment
 		if objValue.Type().Elem().Kind() == reflect.Uint8 {
-			kv[name] = base64.StdEncoding.EncodeToString(objValue.Bytes())
+			var b bytes.Buffer
+			w := gzip.NewWriter(&b)
+			w.Write(objValue.Bytes())
+			w.Close()
+			kv[name] = b.String()
 		} else {
 			for i := 0; i < objValue.Len(); i++ {
 				name = key + "/" + strconv.Itoa(i)
