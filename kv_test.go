@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"io/ioutil"
 	"reflect"
 	"strings"
 	"testing"
@@ -1116,17 +1115,15 @@ func TestCollateKvPairsCompressedData(t *testing.T) {
 	if len(compressedVal) == 0 {
 		t.Fatal("Error : no entry for 'prefix/compresseddatabytes'.")
 	}
-	b := bytes.NewBuffer([]byte(compressedVal))
-	r, err := gzip.NewReader(b)
+
+	data, err := gzipReader(compressedVal)
+	dataStr := string(data.([]byte))
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
-	defer r.Close()
-	s, err := ioutil.ReadAll(r)
-	data := string(s)
 
-	if strToCompress != data {
-		t.Fatalf("Got: %s\nExpected: %s", kv, strToCompress)
+	if strToCompress != dataStr {
+		t.Fatalf("Got: %q\nExpected: %q", dataStr, strToCompress)
 	}
 }
 

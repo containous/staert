@@ -158,24 +158,25 @@ func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (i
 
 			return dataOutput, nil
 		} else if fromType.Kind() == reflect.String {
-			buffer := bytes.NewBuffer([]byte(data.(string)))
-			reader, err := gzip.NewReader(buffer)
-			if err != nil {
-				decodedData, err := base64.StdEncoding.DecodeString(data.(string))
-				if err != nil {
-					return nil, err
-				}
-				return decodedData, nil
-			}
-			defer reader.Close()
-			decodedData, err := ioutil.ReadAll(reader)
-			if err != nil {
-				return nil, err
-			}
-			return decodedData, nil
+			return gzipReader(data)
 		}
 	}
 	return data, nil
+}
+
+func gzipReader(data interface{}) (interface{}, error) {
+	buffer := bytes.NewBuffer([]byte(data.(string)))
+	reader, err := gzip.NewReader(buffer)
+	if err != nil {
+		// Try to decode data as Base64 encoded string to assume backward compatibility
+		return base64Reader(data.(string))
+	}
+	defer reader.Close()
+	return ioutil.ReadAll(reader)
+}
+
+func base64Reader(data string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(data)
 }
 
 // StoreConfig stores the config into the KV Store
@@ -276,11 +277,11 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 	case reflect.Array, reflect.Slice:
 		// Byte slices get special treatment
 		if objValue.Type().Elem().Kind() == reflect.Uint8 {
-			var b bytes.Buffer
-			w := gzip.NewWriter(&b)
-			w.Write(objValue.Bytes())
-			w.Close()
-			kv[name] = b.String()
+			compressedData, err := gzipWriter(objValue.Bytes())
+			if err != nil {
+				return err
+			}
+			kv[name] = compressedData
 		} else {
 			for i := 0; i < objValue.Len(); i++ {
 				name = key + "/" + strconv.Itoa(i)
@@ -301,6 +302,17 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 		return fmt.Errorf("kind %s not supported", kind.String())
 	}
 	return nil
+}
+
+func gzipWriter(data []byte) (string, error) {
+	var buffer bytes.Buffer
+	gzipWriter := gzip.NewWriter(&buffer)
+	_, err := gzipWriter.Write(data)
+	if err != nil {
+		return "", err
+	}
+	gzipWriter.Close()
+	return buffer.String(), nil
 }
 
 // ListRecursive lists all key value children under key
