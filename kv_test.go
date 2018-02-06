@@ -1116,8 +1116,8 @@ func TestCollateKvPairsCompressedData(t *testing.T) {
 		t.Fatal("Error : no entry for 'prefix/compresseddatabytes'.")
 	}
 
-	data, err := gzipReader(compressedVal)
-	dataStr := string(data.([]byte))
+	data, err := readCompressedData(compressedVal, gzipReader)
+	dataStr := string(data)
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
@@ -1145,6 +1145,7 @@ func TestParseKvSourceCompressedData(t *testing.T) {
 	}
 
 	strToCompress := "Testing automatic compressed data if byte array"
+
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
 	w.Write([]byte(strToCompress))

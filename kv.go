@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"reflect"
 	"sort"
@@ -158,25 +159,30 @@ func decodeHook(fromType reflect.Type, toType reflect.Type, data interface{}) (i
 
 			return dataOutput, nil
 		} else if fromType.Kind() == reflect.String {
-			return gzipReader(data)
+			return readCompressedData(data.(string), gzipReader, base64Reader)
 		}
 	}
 	return data, nil
 }
 
-func gzipReader(data interface{}) (interface{}, error) {
-	buffer := bytes.NewBuffer([]byte(data.(string)))
-	reader, err := gzip.NewReader(buffer)
-	if err != nil {
-		// Try to decode data as Base64 encoded string to assume backward compatibility
-		return base64Reader(data.(string))
+func readCompressedData(data string, fs ...func(io.Reader) (io.Reader, error)) ([]byte, error) {
+	var err error
+	for _, f := range fs {
+		var reader io.Reader
+		reader, err = f(bytes.NewBufferString(data))
+		if err == nil {
+			return ioutil.ReadAll(reader)
+		}
 	}
-	defer reader.Close()
-	return ioutil.ReadAll(reader)
+	return nil, err
 }
 
-func base64Reader(data string) ([]byte, error) {
-	return base64.StdEncoding.DecodeString(data)
+func base64Reader(r io.Reader) (io.Reader, error) {
+	return base64.NewDecoder(base64.StdEncoding, r), nil
+}
+
+func gzipReader(r io.Reader) (io.Reader, error) {
+	return gzip.NewReader(r)
 }
 
 // StoreConfig stores the config into the KV Store
@@ -277,7 +283,7 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 	case reflect.Array, reflect.Slice:
 		// Byte slices get special treatment
 		if objValue.Type().Elem().Kind() == reflect.Uint8 {
-			compressedData, err := gzipWriter(objValue.Bytes())
+			compressedData, err := writeCompressedData(objValue.Bytes())
 			if err != nil {
 				return err
 			}
@@ -304,7 +310,7 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 	return nil
 }
 
-func gzipWriter(data []byte) (string, error) {
+func writeCompressedData(data []byte) (string, error) {
 	var buffer bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buffer)
 	_, err := gzipWriter.Write(data)
