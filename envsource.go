@@ -95,6 +95,13 @@ func (e *envSource) analyzeStruct(configType reflect.Type, currentPath path) ([]
 			continue
 		}
 
+		// unexported fields must be handled after embdedded structs (field.Anonymous)
+		// because the PkgPath is also null for them.
+		// ref: https://github.com/golang/go/issues/21122
+		if field.PkgPath != "" { //field is unexported
+			continue
+		}
+
 		values, err := e.analyzeValue(field.Type, append(currentPath, field.Name))
 
 		if err != nil {

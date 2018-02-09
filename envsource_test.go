@@ -123,6 +123,21 @@ func TestAnalyzeStruct(t *testing.T) {
 			testAnalyzeStructShouldSucceed,
 		},
 		{
+			"WithUnexportedFields",
+			&struct {
+				unexported string
+				IntValue   int
+			}{},
+			[]*envValue{
+				&envValue{"10", path{"IntValue"}},
+			},
+			map[string]string{
+				"UNEXPORTED": "FOOO",
+				"INT_VALUE":  "10",
+			},
+			testAnalyzeStructShouldSucceed,
+		},
+		{
 			"WithEmbeddedStruct",
 			&struct {
 				basicAppConfig
