@@ -16,8 +16,14 @@
 [[projects]]
   branch = "master"
   name = "github.com/containous/flaeg"
+  packages = [".","parse"]
+  revision = "c4797734e8b31bd78dc2cc5d88d510decdee2d7e"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/fatih/camelcase"
   packages = ["."]
-  revision = "4b6f66624dce34a226f080b414c4705ea8731bc5"
+  revision = "44e46d280b43ec1531bb25252440e34f1b800b65"
 
 [[projects]]
   branch = "master"
@@ -34,6 +40,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "431d98d658e2cb8b7cced3138a278a8632f666f123bc250532ae661babb055c0"
+  inputs-digest = "ffc28556ec3ec497812696810606e7f0ba6ec6d08b62470dafa16151f099c7c9"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -26,8 +26,8 @@
   name = "github.com/BurntSushi/toml"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/containous/flaeg"
-  version = "v1.0.0"
 
 [[constraint]]
   branch = "master"
