@@ -78,6 +78,11 @@ func (e *envSource) analyzeStruct(configType reflect.Type, currentPath path) ([]
 	for i := 0; i < configType.NumField(); i++ {
 		field := configType.Field(i)
 
+		//TODO: Handle this case;
+		//find the find the underlying struct and process it.
+		if field.Type.Kind() == reflect.Interface {
+			continue //skip fields of kind interface
+		}
 		// If we're facing an embedded struct
 		if field.Anonymous {
 			values, err := e.analyzeStruct(field.Type, currentPath)

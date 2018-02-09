@@ -27,6 +27,16 @@ type basicAppConfig struct {
 	BoolValue   bool
 }
 
+type typeInterface interface {
+	Foo() string
+}
+
+type delegatorType struct {
+	typeInterface
+	IntValue    int
+	StringValue string
+}
+
 type sortableEnvValues []*envValue
 
 func (s sortableEnvValues) Len() int {
@@ -293,6 +303,19 @@ func TestAnalyzeStruct(t *testing.T) {
 				"CONFIG_STRING_VALUE": "FOOO",
 				"CONFIG_INT_VALUE":    "10",
 				"CONFIG_BOOL_VALUE":   "true",
+			},
+			testAnalyzeStructShouldSucceed,
+		},
+		{
+			"WithInterfaceDelegation",
+			&delegatorType{},
+			[]*envValue{
+				&envValue{"FOOO", path{"StringValue"}},
+				&envValue{"10", path{"IntValue"}},
+			},
+			map[string]string{
+				"STRING_VALUE": "FOOO",
+				"INT_VALUE":    "10",
 			},
 			testAnalyzeStructShouldSucceed,
 		},
