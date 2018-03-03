@@ -11,16 +11,17 @@ import (
 
 	"github.com/abronan/valkeyrie/store"
 	"github.com/containous/flaeg"
+	"github.com/containous/flaeg/parse"
 	"github.com/mitchellh/mapstructure"
 )
 
 func TestGenerateMapstructureBasic(t *testing.T) {
-	moke := []*store.KVPair{
+	mock := []*store.KVPair{
 		{Key: "test/addr", Value: []byte("foo")},
 		{Key: "test/child/data", Value: []byte("bar")}}
 	prefix := "test"
 
-	output, err := generateMapstructure(moke, prefix)
+	output, err := generateMapstructure(mock, prefix)
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
@@ -37,14 +38,14 @@ func TestGenerateMapstructureBasic(t *testing.T) {
 }
 
 func TestGenerateMapstructureTrivialMap(t *testing.T) {
-	moke := []*store.KVPair{
+	mock := []*store.KVPair{
 		{Key: "test/vfoo", Value: []byte("foo")},
 		{Key: "test/vother/foo", Value: []byte("foo")},
 		{Key: "test/vother/bar", Value: []byte("bar")},
 	}
 	prefix := "test"
 
-	output, err := generateMapstructure(moke, prefix)
+	output, err := generateMapstructure(mock, prefix)
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
@@ -62,7 +63,7 @@ func TestGenerateMapstructureTrivialMap(t *testing.T) {
 }
 
 func TestGenerateMapstructureTrivialSlice(t *testing.T) {
-	moke := []*store.KVPair{
+	mock := []*store.KVPair{
 		{Key: "test/vfoo", Value: []byte("foo")},
 		{Key: "test/vother/0", Value: []byte("foo")},
 		{Key: "test/vother/1", Value: []byte("bar1")},
@@ -70,7 +71,7 @@ func TestGenerateMapstructureTrivialSlice(t *testing.T) {
 	}
 	prefix := "test"
 
-	output, err := generateMapstructure(moke, prefix)
+	output, err := generateMapstructure(mock, prefix)
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
@@ -89,7 +90,7 @@ func TestGenerateMapstructureTrivialSlice(t *testing.T) {
 }
 
 func TestGenerateMapstructureNotTrivialSlice(t *testing.T) {
-	moke := []*store.KVPair{
+	mock := []*store.KVPair{
 		{Key: "test/vfoo", Value: []byte("foo")},
 		{Key: "test/vother/0/foo1", Value: []byte("bar")},
 		{Key: "test/vother/0/foo2", Value: []byte("bar")},
@@ -98,7 +99,7 @@ func TestGenerateMapstructureNotTrivialSlice(t *testing.T) {
 	}
 	prefix := "test"
 
-	output, err := generateMapstructure(moke, prefix)
+	output, err := generateMapstructure(mock, prefix)
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
@@ -221,7 +222,7 @@ func TestKvSourceEmpty(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	//Test
@@ -251,7 +252,7 @@ func TestKvSourceEmpty(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(time.Second),
+		DurationField: parse.Duration(time.Second),
 	}
 
 	if !reflect.DeepEqual(expected, rootCmd.Config) {
@@ -318,7 +319,7 @@ func TestIntegrationMapstructureWithDecodeHookPointer(t *testing.T) {
 		PtrStruct1: &Struct1{
 			S1Int: 28,
 		},
-		DurationField: flaeg.Duration(28 * time.Nanosecond),
+		DurationField: parse.Duration(28 * time.Nanosecond),
 	}
 
 	if !reflect.DeepEqual(expected, config) {
@@ -346,7 +347,7 @@ func TestIntegrationMapstructureInitiatedPtrReset(t *testing.T) {
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(28 * time.Second),
+		DurationField: parse.Duration(28 * time.Second),
 	}
 
 	//test
@@ -369,7 +370,7 @@ func TestIntegrationMapstructureInitiatedPtrReset(t *testing.T) {
 			S1Int:    24,
 			S1String: "S1StringInitConfig",
 		},
-		DurationField: flaeg.Duration(28 * time.Second),
+		DurationField: parse.Duration(28 * time.Second),
 	}
 
 	if !reflect.DeepEqual(expected, config) {
@@ -414,7 +415,7 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		PtrStruct1: &Struct1{
 			S1Int: 28,
 		},
-		DurationField: flaeg.Duration(28 * time.Nanosecond),
+		DurationField: parse.Duration(28 * time.Nanosecond),
 	}
 
 	if !reflect.DeepEqual(expected, rootCmd.Config) {
@@ -457,7 +458,7 @@ func TestLoadConfigKvSourceNestedPtrsNil(t *testing.T) {
 			S1String:     "S1StringInitConfig",
 			S1PtrStruct3: &Struct3{},
 		},
-		DurationField: flaeg.Duration(21 * time.Second),
+		DurationField: parse.Duration(21 * time.Second),
 	}
 
 	if !reflect.DeepEqual(expected, config) {
@@ -507,7 +508,7 @@ func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 			S1String:     "S1StringInitConfig",
 			S1PtrStruct3: &Struct3{},
 		},
-		DurationField: flaeg.Duration(21 * time.Second),
+		DurationField: parse.Duration(21 * time.Second),
 	}
 
 	if !reflect.DeepEqual(expected, rootCmd.Config) {
@@ -616,7 +617,7 @@ func TestCollateKvPairsNestedPointers(t *testing.T) {
 			S1String:     "S1StringInitConfig",
 			S1PtrStruct3: &Struct3{},
 		},
-		DurationField: flaeg.Duration(21 * time.Second),
+		DurationField: parse.Duration(21 * time.Second),
 	}
 
 	//test
@@ -1152,7 +1153,7 @@ func TestParseKvSourceCompressedData(t *testing.T) {
 	w.Close()
 
 	kvs := []*KvSource{
-		&KvSource{
+		{
 			&Mock{
 				KVPairs: []*store.KVPair{
 					{
@@ -1163,7 +1164,7 @@ func TestParseKvSourceCompressedData(t *testing.T) {
 			},
 			"test",
 		},
-		&KvSource{
+		{
 			&Mock{
 				KVPairs: []*store.KVPair{
 					{
