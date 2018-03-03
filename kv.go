@@ -77,11 +77,11 @@ func generateMapstructure(pairs []*store.KVPair, prefix string) (map[string]inte
 	for _, p := range pairs {
 		// Trim the prefix off our key first
 		key := strings.TrimPrefix(strings.Trim(p.Key, "/"), strings.Trim(prefix, "/")+"/")
-		raw, err := processKV(key, p.Value, raw)
+		var err error
+		raw, err = processKV(key, p.Value, raw)
 		if err != nil {
 			return raw, err
 		}
-
 	}
 	return raw, nil
 }
@@ -313,11 +313,17 @@ func collateKvRecursive(objValue reflect.Value, kv map[string]string, key string
 func writeCompressedData(data []byte) (string, error) {
 	var buffer bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buffer)
+
 	_, err := gzipWriter.Write(data)
 	if err != nil {
 		return "", err
 	}
-	gzipWriter.Close()
+
+	err = gzipWriter.Close()
+	if err != nil {
+		return "", err
+	}
+
 	return buffer.String(), nil
 }
 

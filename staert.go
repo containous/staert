@@ -51,23 +51,27 @@ func (s *Staert) parseConfigAllSources(cmd *flaeg.Command) error {
 // It returns the the parsed config or an error if it fails
 func (s *Staert) LoadConfig() (interface{}, error) {
 	for _, src := range s.sources {
-		//Type assertion
+		// Type assertion
 		f, ok := src.(*flaeg.Flaeg)
 		if ok {
-			if fCmd, err := f.GetCommand(); err != nil {
+			fCmd, err := f.GetCommand()
+			if err != nil {
 				return nil, err
-			} else if s.command != fCmd {
-				//IF fleag sub-command
+			}
+
+			if s.command != fCmd {
+				// if fleag sub-command
 				if fCmd.Metadata["parseAllSources"] == "true" {
-					//IF parseAllSources
+					// if parseAllSources
 					fCmdConfigType := reflect.TypeOf(fCmd.Config)
 					sCmdConfigType := reflect.TypeOf(s.command.Config)
 					if fCmdConfigType != sCmdConfigType {
-						return nil, fmt.Errorf("command %s : Config type doesn't match with root command config type. Expected %s got %s", fCmd.Name, sCmdConfigType.Name(), fCmdConfigType.Name())
+						return nil, fmt.Errorf("command %s : Config type doesn't match with root command config type. Expected %s got %s",
+							fCmd.Name, sCmdConfigType.Name(), fCmdConfigType.Name())
 					}
 					s.command = fCmd
 				} else {
-					// ELSE (not parseAllSources)
+					// (not parseAllSources)
 					s.command, err = f.Parse(fCmd)
 					return s.command.Config, err
 				}
@@ -84,7 +88,7 @@ func (s *Staert) Run() error {
 	return s.command.Run()
 }
 
-//TomlSource impement Source
+// TomlSource implement Source
 type TomlSource struct {
 	filename     string
 	dirNfullpath []string
@@ -104,10 +108,8 @@ func (ts *TomlSource) ConfigFileUsed() string {
 }
 
 func preprocessDir(dirIn string) (string, error) {
-	dirOut := dirIn
 	expanded := os.ExpandEnv(dirIn)
-	dirOut, err := filepath.Abs(expanded)
-	return dirOut, err
+	return filepath.Abs(expanded)
 }
 
 func findFile(filename string, dirNfile []string) string {
@@ -133,22 +135,23 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	if len(ts.fullpath) < 2 {
 		return cmd, nil
 	}
+
 	metadata, err := toml.DecodeFile(ts.fullpath, cmd.Config)
 	if err != nil {
 		return nil, err
 	}
+
 	boolFlags, err := flaeg.GetBoolFlags(cmd.Config)
 	if err != nil {
 		return nil, err
 	}
+
 	flaegArgs, hasUnderField, err := generateArgs(metadata, boolFlags)
 	if err != nil {
 		return nil, err
 	}
 
-	// fmt.Println(flaegArgs)
 	err = flaeg.Load(cmd.Config, cmd.DefaultPointersConfig, flaegArgs)
-	//if err!= missing parser err
 	if err != nil && err != flaeg.ErrParserNotFound {
 		return nil, err
 	}
@@ -167,17 +170,15 @@ func generateArgs(metadata toml.MetaData, flags []string) ([]string, bool, error
 	keys := metadata.Keys()
 	hasUnderField := false
 	for i, key := range keys {
-		// fmt.Println(key)
 		if metadata.Type(key.String()) == "Hash" {
 			// TOML hashes correspond to Go structs or maps.
-			// fmt.Printf("%s could be a ptr on a struct, or a map\n", key)
 			for j := i; j < len(keys); j++ {
-				// fmt.Printf("%s =? %s\n", keys[j].String(), "."+key.String())
 				if strings.Contains(keys[j].String(), key.String()+".") {
 					hasUnderField = true
 					break
 				}
 			}
+
 			match := false
 			for _, flag := range flags {
 				if flag == strings.ToLower(key.String()) {
