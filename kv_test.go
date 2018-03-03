@@ -3,7 +3,6 @@ package staert
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,6 +12,8 @@ import (
 	"github.com/containous/flaeg"
 	"github.com/containous/flaeg/parse"
 	"github.com/mitchellh/mapstructure"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGenerateMapstructureBasic(t *testing.T) {
@@ -22,9 +23,7 @@ func TestGenerateMapstructureBasic(t *testing.T) {
 	prefix := "test"
 
 	output, err := generateMapstructure(mock, prefix)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	require.NoError(t, err)
 
 	expected := map[string]interface{}{
 		"addr": "foo",
@@ -32,9 +31,8 @@ func TestGenerateMapstructureBasic(t *testing.T) {
 			"data": "bar",
 		},
 	}
-	if !reflect.DeepEqual(expected, output) {
-		t.Fatalf("Got: %#v\nExpected: %#v", expected, output)
-	}
+
+	assert.Exactly(t, expected, output)
 }
 
 func TestGenerateMapstructureTrivialMap(t *testing.T) {
@@ -46,9 +44,7 @@ func TestGenerateMapstructureTrivialMap(t *testing.T) {
 	prefix := "test"
 
 	output, err := generateMapstructure(mock, prefix)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	require.NoError(t, err)
 
 	expected := map[string]interface{}{
 		"vfoo": "foo",
@@ -57,9 +53,8 @@ func TestGenerateMapstructureTrivialMap(t *testing.T) {
 			"bar": "bar",
 		},
 	}
-	if !reflect.DeepEqual(expected, output) {
-		t.Fatalf("Got: %#v\nExpected: %#v", expected, output)
-	}
+
+	assert.Exactly(t, expected, output)
 }
 
 func TestGenerateMapstructureTrivialSlice(t *testing.T) {
@@ -72,9 +67,7 @@ func TestGenerateMapstructureTrivialSlice(t *testing.T) {
 	prefix := "test"
 
 	output, err := generateMapstructure(mock, prefix)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	require.NoError(t, err)
 
 	expected := map[string]interface{}{
 		"vfoo": "foo",
@@ -84,9 +77,8 @@ func TestGenerateMapstructureTrivialSlice(t *testing.T) {
 			"2": "bar2",
 		},
 	}
-	if !reflect.DeepEqual(expected, output) {
-		t.Fatalf("Got: %#v\nExpected: %#v", expected, output)
-	}
+
+	assert.Exactly(t, expected, output)
 }
 
 func TestGenerateMapstructureNotTrivialSlice(t *testing.T) {
@@ -100,9 +92,7 @@ func TestGenerateMapstructureNotTrivialSlice(t *testing.T) {
 	prefix := "test"
 
 	output, err := generateMapstructure(mock, prefix)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	require.NoError(t, err)
 
 	expected := map[string]interface{}{
 		"vfoo": "foo",
@@ -117,9 +107,8 @@ func TestGenerateMapstructureNotTrivialSlice(t *testing.T) {
 			},
 		},
 	}
-	if !reflect.DeepEqual(expected, output) {
-		t.Fatalf("Got: %#v\nExpected: %#v", expected, output)
-	}
+
+	assert.Exactly(t, expected, output)
 }
 
 func TestDecodeHookSlice(t *testing.T) {
@@ -134,9 +123,7 @@ func TestDecodeHookSlice(t *testing.T) {
 		},
 	}
 	output, err := decodeHook(reflect.TypeOf(data), reflect.TypeOf([]string{}), data)
-	if err != nil {
-		t.Fatalf("Error : %s", err)
-	}
+	require.NoError(t, err)
 
 	expected := []interface{}{
 		map[string]interface{}{
@@ -148,9 +135,8 @@ func TestDecodeHookSlice(t *testing.T) {
 			"bar2": "bar2",
 		},
 	}
-	if !reflect.DeepEqual(expected, output) {
-		t.Fatalf("Got: %#v\nExpected: %#v", expected, output)
-	}
+
+	assert.Exactly(t, expected, output)
 }
 
 type BasicStruct struct {
@@ -179,6 +165,7 @@ func TestIntegrationMapstructureWithDecodeHook(t *testing.T) {
 			},
 		},
 	}
+
 	var config Test
 
 	//test
@@ -188,13 +175,12 @@ func TestIntegrationMapstructureWithDecodeHook(t *testing.T) {
 		WeaklyTypedInput: true,
 		DecodeHook:       decodeHook,
 	}
+
 	decoder, err := mapstructure.NewDecoder(configDecoder)
-	if err != nil {
-		t.Fatalf("got an err: %v", err)
-	}
-	if err := decoder.Decode(input); err != nil {
-		t.Fatalf("got an err: %v", err)
-	}
+	require.NoError(t, err)
+
+	err = decoder.Decode(input)
+	require.NoError(t, err)
 
 	expected := Test{
 		Vfoo: "foo",
@@ -210,13 +196,10 @@ func TestIntegrationMapstructureWithDecodeHook(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(expected, config) {
-		t.Fatalf("Got: %#v\nExpected: %#v", expected, config)
-	}
+	assert.Exactly(t, expected, config)
 }
 
 func TestKvSourceEmpty(t *testing.T) {
-	//Init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    1,
@@ -225,7 +208,6 @@ func TestKvSourceEmpty(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	//Test
 	rootCmd := &flaeg.Command{
 		Name:                  "test",
 		Description:           "description test",
@@ -233,7 +215,9 @@ func TestKvSourceEmpty(t *testing.T) {
 		DefaultPointersConfig: config,
 		Run: func() error { return nil },
 	}
+
 	s := NewStaert(rootCmd)
+
 	kv := &KvSource{
 		&Mock{
 			KVPairs: []*store.KVPair{},
@@ -243,9 +227,7 @@ func TestKvSourceEmpty(t *testing.T) {
 	s.AddSource(kv)
 
 	_, err := s.LoadConfig()
-	if err != nil {
-		t.Fatalf("Error %s", err)
-	}
+	require.NoError(t, err)
 
 	expected := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -255,9 +237,7 @@ func TestKvSourceEmpty(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(expected, rootCmd.Config) {
-		t.Fatalf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestGenerateMapstructureTrivial(t *testing.T) {
@@ -265,11 +245,11 @@ func TestGenerateMapstructureTrivial(t *testing.T) {
 		{Key: "test/ptrstruct1/s1int", Value: []byte("28")},
 		{Key: "test/durationfield", Value: []byte("28")},
 	}
+
 	prefix := "test"
+
 	output, err := generateMapstructure(input, prefix)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	require.NoError(t, err)
 
 	expected := map[string]interface{}{
 		"durationfield": "28",
@@ -277,17 +257,8 @@ func TestGenerateMapstructureTrivial(t *testing.T) {
 			"s1int": "28",
 		},
 	}
-	if !reflect.DeepEqual(expected, output) {
-		actualJSON, err := json.Marshal(output)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		expectedJSON, err := json.Marshal(expected)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", expectedJSON, actualJSON)
-	}
+
+	assert.Exactly(t, expected, output)
 }
 
 func TestIntegrationMapstructureWithDecodeHookPointer(t *testing.T) {
@@ -308,12 +279,10 @@ func TestIntegrationMapstructureWithDecodeHookPointer(t *testing.T) {
 		//TODO : ZeroFields:       false, doesn't work
 	}
 	decoder, err := mapstructure.NewDecoder(configDecoder)
-	if err != nil {
-		t.Fatalf("got an err: %v", err)
-	}
-	if err := decoder.Decode(mapstruct); err != nil {
-		t.Fatalf("got an err: %v", err)
-	}
+	require.NoError(t, err)
+
+	err = decoder.Decode(mapstruct)
+	require.NoError(t, err)
 
 	expected := StructPtr{
 		PtrStruct1: &Struct1{
@@ -322,17 +291,7 @@ func TestIntegrationMapstructureWithDecodeHookPointer(t *testing.T) {
 		DurationField: parse.Duration(28 * time.Nanosecond),
 	}
 
-	if !reflect.DeepEqual(expected, config) {
-		actualJSON, err := json.Marshal(config)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		expectedJSON, err := json.Marshal(expected)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", expectedJSON, actualJSON)
-	}
+	assert.Exactly(t, expected, config)
 }
 
 func TestIntegrationMapstructureInitiatedPtrReset(t *testing.T) {
@@ -342,6 +301,7 @@ func TestIntegrationMapstructureInitiatedPtrReset(t *testing.T) {
 			"s1int": "24",
 		},
 	}
+
 	config := StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    1,
@@ -350,7 +310,6 @@ func TestIntegrationMapstructureInitiatedPtrReset(t *testing.T) {
 		DurationField: parse.Duration(28 * time.Second),
 	}
 
-	//test
 	configDecoder := &mapstructure.DecoderConfig{
 		Metadata:         nil,
 		Result:           &config,
@@ -358,12 +317,10 @@ func TestIntegrationMapstructureInitiatedPtrReset(t *testing.T) {
 		DecodeHook:       decodeHook,
 	}
 	decoder, err := mapstructure.NewDecoder(configDecoder)
-	if err != nil {
-		t.Fatalf("got an err: %v", err)
-	}
-	if err := decoder.Decode(mapstruct); err != nil {
-		t.Fatalf("got an err: %v", err)
-	}
+	require.NoError(t, err)
+
+	err = decoder.Decode(mapstruct)
+	require.NoError(t, err)
 
 	expected := StructPtr{
 		PtrStruct1: &Struct1{
@@ -373,24 +330,12 @@ func TestIntegrationMapstructureInitiatedPtrReset(t *testing.T) {
 		DurationField: parse.Duration(28 * time.Second),
 	}
 
-	if !reflect.DeepEqual(expected, config) {
-		actualJSON, err := json.Marshal(config)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		expectedJSON, err := json.Marshal(expected)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", expectedJSON, actualJSON)
-	}
+	assert.Exactly(t, expected, config)
 }
 
 func TestParseKvSourceTrivial(t *testing.T) {
-	//Init
 	config := StructPtr{}
 
-	//Test
 	rootCmd := &flaeg.Command{
 		Name:                  "test",
 		Description:           "description test",
@@ -398,6 +343,7 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		DefaultPointersConfig: &config,
 		Run: func() error { return nil },
 	}
+
 	kv := &KvSource{
 		&Mock{
 			KVPairs: []*store.KVPair{
@@ -407,9 +353,9 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		},
 		"test",
 	}
-	if _, err := kv.Parse(rootCmd); err != nil {
-		t.Fatalf("Error %s", err)
-	}
+
+	_, err := kv.Parse(rootCmd)
+	require.NoError(t, err)
 
 	expected := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -418,24 +364,12 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		DurationField: parse.Duration(28 * time.Nanosecond),
 	}
 
-	if !reflect.DeepEqual(expected, rootCmd.Config) {
-		actualJSON, err := json.Marshal(rootCmd.Config)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		expectedJSON, err := json.Marshal(expected)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", expectedJSON, actualJSON)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestLoadConfigKvSourceNestedPtrsNil(t *testing.T) {
-	//Init
 	config := &StructPtr{}
 
-	//Test
 	kv := &KvSource{
 		&Mock{
 			KVPairs: []*store.KVPair{
@@ -448,9 +382,9 @@ func TestLoadConfigKvSourceNestedPtrsNil(t *testing.T) {
 		},
 		"prefix",
 	}
-	if err := kv.LoadConfig(config); err != nil {
-		t.Fatalf("Error %s", err)
-	}
+
+	err := kv.LoadConfig(config)
+	require.NoError(t, err)
 
 	expected := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -461,24 +395,12 @@ func TestLoadConfigKvSourceNestedPtrsNil(t *testing.T) {
 		DurationField: parse.Duration(21 * time.Second),
 	}
 
-	if !reflect.DeepEqual(expected, config) {
-		actualJSON, err := json.Marshal(config)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		expectedJSON, err := json.Marshal(expected)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", expectedJSON, actualJSON)
-	}
+	assert.Exactly(t, expected, config)
 }
 
 func TestParseKvSourceNestedPtrsNil(t *testing.T) {
-	//Init
 	config := StructPtr{}
 
-	//Test
 	rootCmd := &flaeg.Command{
 		Name:                  "test",
 		Description:           "description test",
@@ -486,6 +408,7 @@ func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 		DefaultPointersConfig: &config,
 		Run: func() error { return nil },
 	}
+
 	kv := &KvSource{
 		&Mock{
 			KVPairs: []*store.KVPair{
@@ -498,9 +421,9 @@ func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 		},
 		"prefix",
 	}
-	if _, err := kv.Parse(rootCmd); err != nil {
-		t.Fatalf("Error %s", err)
-	}
+
+	_, err := kv.Parse(rootCmd)
+	require.NoError(t, err)
 
 	expected := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -511,26 +434,14 @@ func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 		DurationField: parse.Duration(21 * time.Second),
 	}
 
-	if !reflect.DeepEqual(expected, rootCmd.Config) {
-		actualJSON, err := json.Marshal(rootCmd.Config)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		expectedJSON, err := json.Marshal(expected)
-		if err != nil {
-			t.Fatalf("Error: %v", err)
-		}
-		t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", expectedJSON, actualJSON)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestParseKvSourceMap(t *testing.T) {
-	//Init
 	config := &struct {
 		Vmap map[string]int
 	}{}
 
-	//Test
 	rootCmd := &flaeg.Command{
 		Name:                  "test",
 		Description:           "description test",
@@ -548,9 +459,9 @@ func TestParseKvSourceMap(t *testing.T) {
 		},
 		"prefix",
 	}
-	if _, err := kv.Parse(rootCmd); err != nil {
-		t.Fatalf("Error %v", err)
-	}
+
+	_, err := kv.Parse(rootCmd)
+	require.NoError(t, err)
 
 	expected := &struct {
 		Vmap map[string]int
@@ -562,13 +473,10 @@ func TestParseKvSourceMap(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(expected, rootCmd.Config) {
-		t.Fatalf("\nexpected\t: %#v\ngot\t\t\t: %#v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestCollateKvPairsBasic(t *testing.T) {
-	//init
 	config := &struct {
 		Vstring string
 		Vint    int
@@ -589,11 +497,9 @@ func TestCollateKvPairsBasic(t *testing.T) {
 		Vdata:   42,
 	}
 
-	// test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error : %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
 	expected := map[string]string{
 		"prefix/vbool":   "true",
@@ -604,13 +510,11 @@ func TestCollateKvPairsBasic(t *testing.T) {
 		"prefix/vint":    "-15",
 		"prefix/vuint":   "51",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsNestedPointers(t *testing.T) {
-	//init
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:        1,
@@ -620,13 +524,10 @@ func TestCollateKvPairsNestedPointers(t *testing.T) {
 		DurationField: parse.Duration(21 * time.Second),
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error : %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	expected := map[string]string{
 		"prefix/ptrstruct1/s1int":                  "1",
 		"prefix/ptrstruct1/s1string":               "S1StringInitConfig",
@@ -635,13 +536,11 @@ func TestCollateKvPairsNestedPointers(t *testing.T) {
 		"prefix/ptrstruct1/s1ptrstruct3/s3float64": "0",
 		"prefix/durationfield":                     "21000000000",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsMapStringString(t *testing.T) {
-	//init
 	config := &struct {
 		Vfoo   string
 		Vother map[string]string
@@ -653,25 +552,20 @@ func TestCollateKvPairsMapStringString(t *testing.T) {
 		},
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error : %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	expected := map[string]string{
 		"prefix/vother/k1": "v1",
 		"prefix/vother/k2": "v2",
 		"prefix/vfoo":      "toto",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsMapIntString(t *testing.T) {
-	//init
 	config := &struct {
 		Vfoo   string
 		Vother map[int]string
@@ -683,25 +577,20 @@ func TestCollateKvPairsMapIntString(t *testing.T) {
 		},
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error : %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	expected := map[string]string{
 		"prefix/vother/51": "v1",
 		"prefix/vother/15": "v2",
 		"prefix/vfoo":      "toto",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsMapStringStruct(t *testing.T) {
-	//init
 	config := &struct {
 		Vfoo   string
 		Vother map[string]Struct1
@@ -719,13 +608,10 @@ func TestCollateKvPairsMapStringStruct(t *testing.T) {
 		},
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error : %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	expected := map[string]string{
 		"prefix/vother/k1/s1bool":   "true",
 		"prefix/vother/k1/s1int":    "51",
@@ -735,13 +621,11 @@ func TestCollateKvPairsMapStringStruct(t *testing.T) {
 		"prefix/vother/k2/s1string": "tata",
 		"prefix/vfoo":               "toto",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsMapStructStructSouldFail(t *testing.T) {
-	//init
 	config := &struct {
 		Vfoo   string
 		Vother map[Struct1]Struct1
@@ -763,16 +647,14 @@ func TestCollateKvPairsMapStructStructSouldFail(t *testing.T) {
 		},
 	}
 
-	//test
 	kv := map[string]string{}
+
 	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
-	if err == nil || !strings.Contains(err.Error(), "struct as key not supported") {
-		t.Fatalf("Expected error Struct as key not supported\ngot: %v", err)
-	}
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "struct as key not supported")
 }
 
 func TestCollateKvPairsSliceInt(t *testing.T) {
-	//init
 	config := &struct {
 		Vfoo   string
 		Vother []int
@@ -781,25 +663,20 @@ func TestCollateKvPairsSliceInt(t *testing.T) {
 		Vother: []int{51, 15},
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	expected := map[string]string{
 		"prefix/vother/0": "51",
 		"prefix/vother/1": "15",
 		"prefix/vfoo":     "toto",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsSlicePtrOnStruct(t *testing.T) {
-	//init
 	config := &struct {
 		Vfoo   string
 		Vother []*BasicStruct
@@ -814,13 +691,10 @@ func TestCollateKvPairsSlicePtrOnStruct(t *testing.T) {
 		},
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	expected := map[string]string{
 		"prefix/vother/0/":     "",
 		"prefix/vother/0/bar1": "",
@@ -830,13 +704,11 @@ func TestCollateKvPairsSlicePtrOnStruct(t *testing.T) {
 		"prefix/vother/1/bar2": "titi",
 		"prefix/vfoo":          "toto",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsEmbedded(t *testing.T) {
-	//init
 	config := &struct {
 		BasicStruct
 		Vfoo string
@@ -848,25 +720,20 @@ func TestCollateKvPairsEmbedded(t *testing.T) {
 		Vfoo: "toto",
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	expected := map[string]string{
 		"prefix/basicstruct/bar1": "tata",
 		"prefix/basicstruct/bar2": "titi",
 		"prefix/vfoo":             "toto",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsEmbeddedSquash(t *testing.T) {
-	//init
 	config := &struct {
 		BasicStruct `mapstructure:",squash"`
 		Vfoo        string
@@ -878,41 +745,34 @@ func TestCollateKvPairsEmbeddedSquash(t *testing.T) {
 		Vfoo: "toto",
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	expected := map[string]string{
 		"prefix/bar1": "tata",
 		"prefix/bar2": "titi",
 		"prefix/vfoo": "toto",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsNotSupportedKindShouldFail(t *testing.T) {
-	//init
 	config := &struct {
 		Vchan chan int
 	}{
 		Vchan: make(chan int),
 	}
 
-	//test
 	kv := map[string]string{}
+
 	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
-	if err == nil || !strings.Contains(err.Error(), "kind chan not supported") {
-		t.Fatalf("Expected error : Kind chan not supported\nGot : %v", err)
-	}
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "kind chan not supported")
 }
 
 func TestStoreConfigEmbeddedSquash(t *testing.T) {
-	//init
 	config := &struct {
 		BasicStruct `mapstructure:",squash"`
 		Vfoo        string
@@ -927,29 +787,24 @@ func TestStoreConfigEmbeddedSquash(t *testing.T) {
 		&Mock{},
 		"prefix",
 	}
-	//test
-	if err := kv.StoreConfig(config); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
 
-	//check
+	err := kv.StoreConfig(config)
+	require.NoError(t, err)
+
 	expected := map[string]string{
 		"prefix/bar1": "tata",
 		"prefix/bar2": "titi",
 		"prefix/vfoo": "toto",
 	}
+
 	result := map[string][]byte{}
-	err := kv.ListRecursive("prefix", result)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
-	if len(result) != len(expected) {
-		t.Fatalf("length of kv.List is not %d", len(expected))
-	}
+
+	err = kv.ListRecursive("prefix", result)
+	require.NoError(t, err)
+
+	assert.Len(t, result, len(expected))
 	for k, v := range result {
-		if string(v) != expected[k] {
-			t.Fatalf("Key %s\nExpected value %s, got %s", k, v, expected[k])
-		}
+		assert.Equal(t, expected[k], string(v))
 	}
 }
 
@@ -962,13 +817,10 @@ func TestCollateKvPairsUnexported(t *testing.T) {
 		vsilent: "mustNotBeInTheMap",
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	if _, ok := kv["prefix/vsilent"]; ok {
 		t.Fatalf("Exported field should not be in the map : %s", kv)
 	}
@@ -976,10 +828,8 @@ func TestCollateKvPairsUnexported(t *testing.T) {
 	expected := map[string]string{
 		"prefix/vstring": "mustBeInTheMap",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
 
+	assert.Exactly(t, expected, kv)
 }
 
 func TestCollateKvPairsShortNameUnexported(t *testing.T) {
@@ -991,13 +841,10 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 		u: "mustNotBeInTheMap",
 	}
 
-	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	//check
 	if _, ok := kv["prefix/u"]; ok {
 		t.Fatalf("Exported field should not be in the map : %s", kv)
 	}
@@ -1005,9 +852,8 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 	expected := map[string]string{
 		"prefix/e": "mustBeInTheMap",
 	}
-	if !reflect.DeepEqual(kv, expected) {
-		t.Fatalf("Got: %s\nExpected: %s", kv, expected)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestListRecursive5Levels(t *testing.T) {
@@ -1025,11 +871,8 @@ func TestListRecursive5Levels(t *testing.T) {
 	}
 	pairs := map[string][]byte{}
 	err := kv.ListRecursive(kv.Prefix, pairs)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	require.NoError(t, err)
 
-	//check
 	expected := map[string][]byte{
 		"prefix/l1":             []byte("level1"),
 		"prefix/d1/l1":          []byte("level2"),
@@ -1037,14 +880,8 @@ func TestListRecursive5Levels(t *testing.T) {
 		"prefix/d2/d1/l1":       []byte("level3"),
 		"prefix/d3/d2/d1/d1/d1": []byte("level5"),
 	}
-	if len(pairs) != len(expected) {
-		t.Fatalf("Expected length %d, got %d", len(expected), len(pairs))
-	}
-	for k, v := range pairs {
-		if !reflect.DeepEqual(v, expected[k]) {
-			t.Fatalf("Key %s\nExpected %s\nGot %s", k, expected[k], v)
-		}
-	}
+
+	assert.Exactly(t, expected, pairs)
 }
 
 func TestListRecursiveEmpty(t *testing.T) {
@@ -1054,17 +891,15 @@ func TestListRecursiveEmpty(t *testing.T) {
 		},
 		"prefix",
 	}
-	pairs := map[string][]byte{}
-	err := kv.ListRecursive(kv.Prefix, pairs)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
 
-	//check
+	pairs := map[string][]byte{}
+
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	require.NoError(t, err)
+
 	expected := map[string][]byte{}
-	if len(pairs) != len(expected) {
-		t.Fatalf("Expected length %d, got %d", len(expected), len(pairs))
-	}
+
+	assert.Exactly(t, expected, pairs)
 }
 
 func TestConvertPairs5Levels(t *testing.T) {
@@ -1075,10 +910,8 @@ func TestConvertPairs5Levels(t *testing.T) {
 		"prefix/d2/d1/l1":       []byte("level3"),
 		"prefix/d3/d2/d1/d1/d1": []byte("level5"),
 	}
-	//test
 	output := convertPairs(input)
 
-	//check
 	expected := map[string][]byte{
 		"prefix/l1":             []byte("level1"),
 		"prefix/d1/l1":          []byte("level2"),
@@ -1087,18 +920,14 @@ func TestConvertPairs5Levels(t *testing.T) {
 		"prefix/d3/d2/d1/d1/d1": []byte("level5"),
 	}
 
-	if len(output) != len(expected) {
-		t.Fatalf("Expected length %d, got %d", len(expected), len(output))
-	}
+	assert.Len(t, output, len(expected))
+
 	for _, p := range output {
-		if !reflect.DeepEqual(p.Value, expected[p.Key]) {
-			t.Fatalf("Key : %s\nExpected %s\nGot %s", p.Key, expected[p.Key], p.Value)
-		}
+		assert.Exactlyf(t, expected[p.Key], p.Value, p.Key)
 	}
 }
 
 func TestCollateKvPairsCompressedData(t *testing.T) {
-
 	strToCompress := "Testing automatic compressed data if byte array"
 	config := &struct {
 		CompressedDataBytes []byte
@@ -1108,9 +937,8 @@ func TestCollateKvPairsCompressedData(t *testing.T) {
 
 	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
 	compressedVal := kv["prefix/compresseddatabytes"]
 	if len(compressedVal) == 0 {
@@ -1118,14 +946,9 @@ func TestCollateKvPairsCompressedData(t *testing.T) {
 	}
 
 	data, err := readCompressedData(compressedVal, gzipReader)
-	dataStr := string(data)
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if strToCompress != dataStr {
-		t.Fatalf("Got: %q\nExpected: %q", dataStr, strToCompress)
-	}
+	assert.Exactly(t, strToCompress, string(data))
 }
 
 type TestCompressedDataStruct struct {
@@ -1133,10 +956,8 @@ type TestCompressedDataStruct struct {
 }
 
 func TestParseKvSourceCompressedData(t *testing.T) {
-	//Init
 	config := TestCompressedDataStruct{}
 
-	//Test
 	rootCmd := &flaeg.Command{
 		Name:                  "test",
 		Description:           "description test",
@@ -1149,8 +970,11 @@ func TestParseKvSourceCompressedData(t *testing.T) {
 
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
-	w.Write([]byte(strToCompress))
-	w.Close()
+	_, err := w.Write([]byte(strToCompress))
+	require.NoError(t, err)
+
+	err = w.Close()
+	require.NoError(t, err)
 
 	kvs := []*KvSource{
 		{
@@ -1178,26 +1002,14 @@ func TestParseKvSourceCompressedData(t *testing.T) {
 	}
 
 	for _, kv := range kvs {
-		if _, err := kv.Parse(rootCmd); err != nil {
-			t.Fatalf("Error %s", err)
-		}
+		_, err := kv.Parse(rootCmd)
+		require.NoError(t, err)
 
-		//Check
 		expected := &TestCompressedDataStruct{
 			CompressedDataBytes: []byte(strToCompress),
 		}
 
-		if !reflect.DeepEqual(expected, rootCmd.Config) {
-			actualJSON, err := json.Marshal(rootCmd.Config)
-			if err != nil {
-				t.Fatalf("Error: %v", err)
-			}
-			expectedJSON, err := json.Marshal(expected)
-			if err != nil {
-				t.Fatalf("Error: %v", err)
-			}
-			t.Fatalf("\nexpected\t: %s\ngot\t\t\t: %s\n", expectedJSON, actualJSON)
-		}
+		assert.Exactly(t, expected, rootCmd.Config)
 	}
 }
 
@@ -1226,17 +1038,14 @@ func TestCollateCustomMarshaller(t *testing.T) {
 	}
 	//test
 	kv := map[string]string{}
-	if err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix"); err != nil {
-		t.Fatalf("Error: %v", err)
-	}
-	//check
+	err := collateKvRecursive(reflect.ValueOf(config), kv, "prefix")
+	require.NoError(t, err)
 
-	check := map[string]string{
+	expected := map[string]string{
 		"prefix": "Bar1,Bar2",
 	}
-	if !reflect.DeepEqual(kv, check) {
-		t.Fatalf("Expected %s\nGot %s", check, kv)
-	}
+
+	assert.Exactly(t, expected, kv)
 }
 
 func TestDecodeHookCustomMarshaller(t *testing.T) {
@@ -1244,12 +1053,9 @@ func TestDecodeHookCustomMarshaller(t *testing.T) {
 		Bar1: "Bar1",
 		Bar2: "Bar2",
 	}
-	output, err := decodeHook(reflect.TypeOf([]string{}), reflect.TypeOf(data), "Bar1,Bar2")
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
 
-	if !reflect.DeepEqual(data, output) {
-		t.Fatalf("Got %#v\nExpected %#v", output, data)
-	}
+	output, err := decodeHook(reflect.TypeOf([]string{}), reflect.TypeOf(data), "Bar1,Bar2")
+	require.NoError(t, err)
+
+	assert.Exactly(t, data, output)
 }
