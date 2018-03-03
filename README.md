@@ -1,4 +1,5 @@
 # Stært
+
 [![Travis branch](https://img.shields.io/travis/containous/staert/master.svg)](https://travis-ci.org/containous/staert)
 [![Coverage Status](https://coveralls.io/repos/github/containous/staert/badge.svg?branch=master)](https://coveralls.io/github/containous/staert?branch=master)
 [![license](https://img.shields.io/github/license/containous/staert.svg)](https://github.com/containous/staert/blob/master/LICENSE.md)
@@ -6,32 +7,38 @@
 Stært is a Go library for loading and merging a program configuration structure from many sources.
 
 ## Overview
-Stært was born in order to merge two sources of Configuration ([Flæg](https://github.com/containous/flaeg), [Toml](http://github.com/BurntSushi/toml)).
+
+Stært was born in order to merge two sources of configuration ([Flæg](https://github.com/containous/flaeg), [TOML](http://github.com/BurntSushi/toml)).
 Now it also supports [Key-Value Store](#kvstore).
+
 We developed [Flæg](https://github.com/containous/flaeg) and Stært in order to simplify configuration maintenance on [Træfik](https://github.com/containous/traefik).
 
 ## Features
- - Load your Configuration structure from many sources
- - Keep your Configuration structure values unchanged if no overwriting (support defaults values)
- - Three native sources :
-	- Command line arguments using [flæg](https://github.com/containous/flaeg) package
-	- TOML config file using [toml](http://github.com/BurntSushi/toml) package
+
+- Load your configuration structure from many sources
+- Keep your configuration structure values unchanged if no overwriting (support defaults values)
+- Three native sources :
+	- Command line arguments using [Flæg](https://github.com/containous/flaeg) package
+	- TOML config file using [TOML](http://github.com/BurntSushi/toml) package
 	- [Key-Value Store](#kvstore) using [libkv](https://github.com/docker/libkv) and [mapstructure](https://github.com/mitchellh/mapstructure) packages
- - An Interface to add your own sources
- - Handle pointers field :
+- An interface to add your own sources
+- Handle pointers field :
 	- You can give a structure of default values for pointers
     - Same comportment as [Flæg](https://github.com/containous/flaeg)
- - Stært is Command oriented
+- Stært is command oriented
     - It use `flaeg.Command`
     - Same comportment as [Flæg](https://github.com/containous/flaeg) commands
-	- Stært supports only one Command (the Root-Command)
-	- Flæg allows you to use many Commands
-	- Only Flæg will be used if a Sub-Command is called. (because Config type could be different from one Command to another)
-	- You can add Metadata `"parseAllSources" -> "true"` to a Sub-Command if you want to parse all sources (it requires the same Config type on the Sub-Command and the Root-Command)  
+	- Stært supports only one command (the root-command)
+	- Flæg allows you to use many commands
+	- Only Flæg will be used if a sub-command is called. (because the configuration type could be different from one command to another)
+	- You can add meta-data `"parseAllSources" -> "true"` to a sub-command if you want to parse all sources (it requires the same configuration type on the sub-command and the root-command)  
 
 ## Getting Started
+
 ### The configuration
-It works on your own Configuration structure, like this one :
+
+It works on your own configuration structure, like this one :
+
 ```go
 package example
 
@@ -42,24 +49,25 @@ import (
 	"os"
 )
 
-//Configuration is a struct which contains all differents type to field
+// Configuration is a struct which contains all different type to field
 type Configuration struct {
 	IntField     int                      `description:"An integer field"`
 	StringField  string                   `description:"A string field"`
 	PointerField *PointerSubConfiguration `description:"A pointer field"`
 }
 
-//PointerSubConfiguration is a SubStructure Configuration
+// PointerSubConfiguration is a SubStructure Configuration
 type PointerSubConfiguration struct {
 	BoolField  bool    `description:"A boolean field"`
 	FloatField float64 `description:"A float field"`
 }
 ```
 
-Let's initialize it: 
+Let's initialize it:
+
 ```go
- func main() {
-	//Init with default value
+func main() {
+	// Init with default value
 	config := &Configuration{
 		IntField:    1,
 		StringField: "init",
@@ -67,95 +75,119 @@ Let's initialize it:
 			FloatField: 1.1,
 		},
 	}
-	//Set default pointers value
+	// Set default pointers value
 	defaultPointersConfig := &Configuration{
 		PointerField: &PointerSubConfiguration{
 			BoolField:  true,
 			FloatField: 99.99,
 		},
 	}
+	//...
+}
 ```
 
 ### The command
-Stært uses `flaeg.Command` Structure, like this :
+
+Stært uses `flaeg.Command` structure, like this:
+
 ```go
-    //Create Command
-    command:=&flaeg.Command{
-        Name:"example",
-        Description:"This is an example of description",
-        Config:config,
-        DefaultPointersConfig:defaultPointersConfig,
-        Run: func() error {
-            fmt.Printf("Run example with the config :\n%+v\n",config)
- 			fmt.Printf("PointerField contains:%+v\n", config.PointerField)
-            return nil
-        }
-    }
+// Create command
+command := &flaeg.Command{
+	Name:"example",
+	Description:"This is an example of description",
+	Config:config,
+	DefaultPointersConfig:defaultPointersConfig,
+	Run: func() error {
+		fmt.Printf("Run example with the config :\n%+v\n", config)
+		fmt.Printf("PointerField contains:%+v\n", config.PointerField)
+		return nil
+	}
+}
 ```
 
 ### Use stært with sources
-Init Stært
+
+Initialize Stært:
+
 ```go
-    s:=staert.NewStaert(command)
+s := staert.NewStaert(command)
 ```
-Init TOML source
+
+Initialize TOML source:
+
 ```go
-     toml:=staert.NewTomlSource("example", []string{"./toml/", "/any/other/path"})
+toml := staert.NewTomlSource("example", []string{"./toml/", "/any/other/path"})
 ```
-Init Flæg source
+
+Initialize Flæg source:
+
 ```go
-     f:=flaeg.New(command, os.Args[1:])
+f := flaeg.New(command, os.Args[1:])
 ```
+
 ### Add sources
-Add TOML and flæg sources
+
+Add TOML and Flæg sources:
+
 ```go
-    s.AddSource(toml)
-    s.AddSource(f)
-``` 
-NB : You can change order, so that, flaeg configuration will overwrite toml one 
+s.AddSource(toml)
+s.AddSource(f)
+```
+
+**NB:** You can change order, so that, Flæg configuration will overwrite TOML one.
+
 ### Load your configuration
-Just call LoadConfig function :
+
+Just call `LoadConfig` function:
+
 ```go
-	loadedConfig, err := s.LoadConfig();
-    if err != nil {
-		//OOPS
-	}
-	//DO WHAT YOU WANT WITH loadedConfig 
-	//OR CALL RUN FUNC
-``` 
+loadedConfig, err := s.LoadConfig();
+if err != nil {
+	// oops
+}
+// do what you want with `loadedConfig`
+// or call run function
+```
 
 ### You can call Run
-Run function will call the func `run()` from the command :
+
+Run function will call `run()` from the command:
+
 ```go
-    if err := s.Run(); err != nil {
-		//OOPS
-	}
- }
-``` 
- NB : If you didn't call `LoadConfig()` before, your func `run()` will use your original configuration
+if err := s.Run(); err != nil {
+	//OOPS
+}
+```
+
+**NB:** If you didn't call `LoadConfig()` before, your function `run()` will use your original configuration.
+
 ### Let's run example
 
-TOML file `./toml/example.toml` :
+TOML file `./toml/example.toml`:
+
 ```toml
-IntField= 2
+IntField = 2
 [PointerField]
-``` 
-We can run the example program using folowing CLI arguments :
+```
+
+We can run the example program using following CLI arguments:
+
 ```
 $ ./example --stringfield=owerwrittenFromFlag --pointerfield.floatfield=55.55
 Run example with the config :
 &{IntField:2 StringField:owerwrittenFromFlag PointerField:0xc82000ec80}
 PointerField contains:&{BoolField:true FloatField:55.55}
-
 ```
 
-## Full example : 
+### Full example
+
 [Tagoæl](https://github.com/debovema/tagoael) is a trivial example which shows how Stært can be use.
-This funny golang progam takes its configuration from both TOML and Flaeg sources to display messages.
-```shell
+This funny GoLang program takes its configuration from both TOML and Flæg sources to display messages.
+
+```
 $ ./tagoael -h
 tagoæl is an enhanced Hello World program to display messages with
-an advanced configuration mechanism provided by flæg & stært.
+an advanced configuration mechanism provided by Flæg & Stært.
 
 flæg:   https://github.com/containous/flaeg
 stært:  https://github.com/containous/staert
@@ -173,62 +205,75 @@ Flags:
         -n, --numbertodisplay                              Number of messages to display (default "1000")
         -h, --help                                         Print Help (this message) and exit
 ```
+
 Thank you [@debovema](https://github.com/debovema) for this work :)
 
 ## KvStore
-As with Flæg and Toml sources, the configuration structure can be loaded from a Key-Value Store.
+
+As with Flæg and TOML sources, the configuration structure can be loaded from a Key-Value Store.
 The package [libkv](https://github.com/docker/libkv) provides connection to many KV Store like `Consul`, `Etcd` or `Zookeeper`.
 
-The whole configuration structure is stored, using architecture like this pattern :
- - Key : `<prefix1>/<prefix2>/.../<fieldNameLevel1>/<fieldNameLevel2>/.../<fieldName>`
- - Value : `<value>`
- 
-It handles :
- - All [mapstructure](https://github.com/mitchellh/mapstructure) features(`bool`, `int`, ... , Squashed Embedded Sub `struct`, Pointer).
- - Maps with pattern : `.../<MapFieldName>/<mapKey>` -> `<mapValue>` (Struct as key not supported)
- - Slices (and Arrays) with pattern : `.../<SliceFieldName>/<SliceIndex>` -> `<value>`
+The whole configuration structure is stored, using architecture like this pattern:
 
-Note : Hopefully, we provide the function `StoreConfig` to store your configuration structure ;)
+- Key: `<prefix1>/<prefix2>/.../<fieldNameLevel1>/<fieldNameLevel2>/.../<fieldName>`
+- Value: `<value>`
+
+It handles:
+
+- All [mapstructure](https://github.com/mitchellh/mapstructure) features(`bool`, `int`, ... , Squashed Embedded Sub `struct`, Pointer).
+- Maps with pattern : `.../<MapFieldName>/<mapKey>` -> `<mapValue>` (Struct as key not supported)
+- Slices (and Arrays) with pattern : `.../<SliceFieldName>/<SliceIndex>` -> `<value>`
+
+**Note:** Hopefully, we provide the function `StoreConfig` to store your configuration structure ;)
 
 ### KvSource
-KvSource implements Source: 
+
+KvSource implements Source:
 
 ```go
 type KvSource struct {
 	store.Store
-	Prefix string // like this "prefix" (witout the /)
+	Prefix string // like this "prefix" (without the /)
 }
 ```
 
-### Initialize 
-It can be initialized like this :
+### Initialize
+
+It can be initialized like this:
+
 ```go
-	kv, err := staert.NewKvSource(backend store.Backend, addrs []string, options *store.Config, prefix string)
+kv, err := staert.NewKvSource(backend store.Backend, addrs []string, options *store.Config, prefix string)
 ```
 
 ### LoadConfig
+
 You can directly load data from the KV Store into the config structure (given by reference)
+
 ```go
-	config := &ConfigStruct{} // Here your configuration structure by reference
-	err := kv.Parse(config)
-	//DO WHAT YOU WANT WITH config
+config := &ConfigStruct{} // Here your configuration structure by reference
+err := kv.Parse(config)
+// do what you want with `config`
 ```
 
 ### Add to Stært sources
-Or you can add this source to Stært, as with other sources
+
+You can add this source to Stært, as with other sources:
+
 ```go
-	s.AddSource(kv)
+s.AddSource(kv)
 ```
 
 ### StoreConfig
-You can also store your whole configuration structure into the KV Store :
+
+You can also store your whole configuration structure into the KV Store:
+
 ```go
-	// We assume that config is Initialazed
-	err := kv.StoreConfig(config)
+// We assume that `config` is initialized
+err := kv.StoreConfig(config)
 ```
 
-
 ## Contributing
+
 1. Fork it!
 2. Create your feature branch: `git checkout -b my-new-feature`
 3. Commit your changes: `git commit -am 'Add some feature'`
