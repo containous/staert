@@ -10,14 +10,26 @@
 [[projects]]
   branch = "master"
   name = "github.com/abronan/valkeyrie"
-  packages = [".","store"]
+  packages = [
+    ".",
+    "store"
+  ]
   revision = "063d875e3c5fd734fa2aa12fac83829f62acfc70"
 
 [[projects]]
-  branch = "master"
   name = "github.com/containous/flaeg"
-  packages = ["."]
-  revision = "4b6f66624dce34a226f080b414c4705ea8731bc5"
+  packages = [
+    ".",
+    "parse"
+  ]
+  revision = "963366c29a7acc2d6e02f4f9bcf260d5a1cf4968"
+  version = "v1.1.1"
+
+[[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -31,9 +43,24 @@
   packages = ["."]
   revision = "45c278ab3607870051a2ea9040bb85fcb8557481"
 
+[[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = [
+    "assert",
+    "require"
+  ]
+  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
+  version = "v1.2.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "431d98d658e2cb8b7cced3138a278a8632f666f123bc250532ae661babb055c0"
+  inputs-digest = "2c78b77b71078e30b78c5b9c38f85abd0867ed09b60445c6dde538f93de3e753"
   solver-name = "gps-cdcl"
   solver-version = 1

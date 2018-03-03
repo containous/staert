@@ -6,12 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/containous/flaeg"
 	"github.com/containous/flaeg/parse"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // StructPtr : Struct with pointers
@@ -82,9 +83,8 @@ func TestFlaegSourceNoArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -95,9 +95,7 @@ func TestFlaegSourceNoArgs(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
@@ -144,9 +142,8 @@ func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -160,14 +157,7 @@ func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		result, ok := rootCmd.Config.(*StructPtr)
-		if ok {
-			fmt.Printf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected.PtrStruct1, result.PtrStruct1)
-		}
-
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
@@ -214,9 +204,8 @@ func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -230,9 +219,7 @@ func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("expected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestTomlSourceNothing(t *testing.T) {
@@ -275,9 +262,8 @@ func TestTomlSourceNothing(t *testing.T) {
 	toml := NewTomlSource("nothing", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -288,9 +274,7 @@ func TestTomlSourceNothing(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("expected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestTomlSourceTrivial(t *testing.T) {
@@ -333,9 +317,8 @@ func TestTomlSourceTrivial(t *testing.T) {
 	toml := NewTomlSource("trivial", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -347,10 +330,7 @@ func TestTomlSourceTrivial(t *testing.T) {
 		DurationField: parse.Duration(28 * time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected.PtrStruct1, config.PtrStruct1)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestTomlSourcePointer(t *testing.T) {
@@ -393,9 +373,8 @@ func TestTomlSourcePointer(t *testing.T) {
 	toml := NewTomlSource("pointer", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -411,9 +390,7 @@ func TestTomlSourcePointer(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestTomlSourceFieldUnderPointer(t *testing.T) {
@@ -456,9 +433,8 @@ func TestTomlSourceFieldUnderPointer(t *testing.T) {
 	toml := NewTomlSource("fieldUnderPointer", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	expected := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -469,10 +445,7 @@ func TestTomlSourceFieldUnderPointer(t *testing.T) {
 		DurationField: parse.Duration(42 * time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, config)
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected.PtrStruct1, config.PtrStruct1)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestTomlSourcePointerUnderPointer(t *testing.T) {
@@ -515,9 +488,8 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 	toml := NewTomlSource("pointerUnderPointer", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -532,11 +504,7 @@ func TestTomlSourcePointerUnderPointer(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected.PtrStruct1, config.PtrStruct1)
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected.PtrStruct1.S1PtrStruct3, config.PtrStruct1.S1PtrStruct3)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
@@ -579,9 +547,8 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 	toml := NewTomlSource("fieldUnderPtrUnderPtr", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -595,9 +562,7 @@ func TestTomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
@@ -644,9 +609,8 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -657,9 +621,7 @@ func TestMergeTomlNothingFlaegNoArgs(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
@@ -706,9 +668,8 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -722,9 +683,7 @@ func TestMergeTomlFieldUnderPointerUnderPointerFlaegNoArgs(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
@@ -771,9 +730,8 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -785,11 +743,7 @@ func TestMergeTomlTrivialFlaegOverwriteField(t *testing.T) {
 		DurationField: parse.Duration(28 * time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected.PtrStruct1, config.PtrStruct1)
-
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
@@ -840,9 +794,8 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -862,9 +815,7 @@ func TestMergeTomlPointerUnderPointerFlaegManyArgs(t *testing.T) {
 		DurationField: parse.Duration(55 * time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
@@ -911,9 +862,8 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 	toml := NewTomlSource("nothing", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -924,9 +874,7 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
@@ -975,9 +923,8 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 	toml := NewTomlSource("nothing", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -991,9 +938,7 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
@@ -1044,9 +989,8 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 	toml := NewTomlSource("trivial", []string{"./toml/", "/any/other/path"})
 	s.AddSource(toml)
 
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtr{
@@ -1063,9 +1007,7 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
 }
 
 func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
@@ -1120,7 +1062,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(config, check) {
-				return fmt.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
+				return fmt.Errorf("expected\t: %+v\ngot\t\t\t: %+v", check, config)
 			}
 			return nil
 		},
@@ -1129,20 +1071,14 @@ func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
 	s := NewStaert(rootCmd)
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
+
 	_, err := s.LoadConfig()
-	if err != nil {
-		t.Errorf("Error %v", err)
-	}
+	require.NoError(t, err)
 
-	if err := s.Run(); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err = s.Run()
+	require.NoError(t, err)
 
-	// expected buffer
-	expectedOutput := `Run with config`
-	if !strings.Contains(b.String(), expectedOutput) {
-		t.Errorf("Error output doesn't contain %s,\ngot: %s", expectedOutput, &b)
-	}
+	assert.Contains(t, b.String(), "Run with config")
 }
 
 // Version Config
@@ -1204,7 +1140,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(config, check) {
-				return fmt.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
+				return fmt.Errorf("expected\t: %+v\ngot\t\t\t: %+v", check, config)
 			}
 			return nil
 		},
@@ -1236,18 +1172,12 @@ func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 
 	// check in command run func
 	_, err := s.LoadConfig()
-	if err != nil {
-		t.Errorf("Error %v", err)
-	}
+	require.NoError(t, err)
 
-	if err := s.Run(); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err = s.Run()
+	require.NoError(t, err)
 
-	expectedOutput := `Run with config`
-	if !strings.Contains(b.String(), expectedOutput) {
-		t.Errorf("Error output doesn't contain %s,\ngot: %s", expectedOutput, &b)
-	}
+	assert.Contains(t, b.String(), "Run with config")
 }
 
 func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
@@ -1306,7 +1236,7 @@ func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(config, check) {
-				return fmt.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
+				return fmt.Errorf("expected\t: %+v\ngot\t\t\t: %+v", check, config)
 			}
 			return nil
 		},
@@ -1338,18 +1268,12 @@ func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 
 	// expected in command run func
 	_, err := s.LoadConfig()
-	if err != nil {
-		t.Errorf("Error %v", err)
-	}
+	require.NoError(t, err)
 
-	if err := s.Run(); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err = s.Run()
+	require.NoError(t, err)
 
-	expectedOutput := `Version 2.2beta`
-	if !strings.Contains(b.String(), expectedOutput) {
-		t.Errorf("Error output doesn't contain %s,\ngot: %s", expectedOutput, &b)
-	}
+	assert.Contains(t, b.String(), "Version 2.2beta")
 }
 
 func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
@@ -1413,7 +1337,7 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(config, check) {
-				return fmt.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", check, config)
+				return fmt.Errorf("expected\t: %+v\ngot\t\t\t: %+v", check, config)
 			}
 			return nil
 		},
@@ -1447,18 +1371,12 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 
 	// check in command run func
 	_, err := s.LoadConfig()
-	if err != nil {
-		t.Errorf("Error %v", err)
-	}
+	require.NoError(t, err)
 
-	if err := s.Run(); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err = s.Run()
+	require.NoError(t, err)
 
-	expectedOutput := `Run with config :`
-	if !strings.Contains(b.String(), expectedOutput) {
-		t.Errorf("Error output doesn't contain %s,\ngot: %s", expectedOutput, &b)
-	}
+	assert.Contains(t, b.String(), "Run with config :")
 }
 
 func TestTomlSourceErrorFileNotFound(t *testing.T) {
@@ -1503,75 +1421,79 @@ func TestTomlSourceErrorFileNotFound(t *testing.T) {
 	s.AddSource(toml)
 
 	// expected
-	if err := s.parseConfigAllSources(rootCmd); err != nil {
-		t.Errorf("No Error expected\nGot Error : %s", err)
-	}
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
 
-	if !reflect.DeepEqual(expectedCmd.Config, rootCmd.Config) {
-		t.Errorf("Expected %+v \nGot %+v", expectedCmd.Config, rootCmd.Config)
-	}
-
-	if !reflect.DeepEqual(expectedCmd.DefaultPointersConfig, rootCmd.DefaultPointersConfig) {
-		t.Errorf("Expected %+v \nGot %+v", expectedCmd.DefaultPointersConfig, rootCmd.DefaultPointersConfig)
-	}
+	assert.Exactly(t, expectedCmd.Config, rootCmd.Config)
+	assert.Exactly(t, expectedCmd.DefaultPointersConfig, rootCmd.DefaultPointersConfig)
 }
 
 func TestPreprocessDir(t *testing.T) {
-	thisPath, err := filepath.Abs(".")
+	here, err := filepath.Abs(".")
 	if err != nil {
-		t.Errorf("Error: %v", err)
+		require.NoError(t, err)
 	}
 
-	checkMap := map[string]string{
-		".":                   thisPath,
-		"dir1/dir2":           thisPath + "/dir1/dir2",
-		"/etc/test":           "/etc/test",
-		"/etc/dir1/file1.ext": "/etc/dir1/file1.ext",
+	testCases := []struct {
+		directory string
+		expected  string
+	}{
+		{
+			directory: ".",
+			expected:  here,
+		},
+		{
+			directory: "dir1/dir2",
+			expected:  here + "/dir1/dir2",
+		},
+		{
+			directory: "/etc/test",
+			expected:  "/etc/test",
+		},
+		{
+			directory: "/etc/dir1/file1.ext",
+			expected:  "/etc/dir1/file1.ext",
+		},
 	}
 
-	for in, check := range checkMap {
-		out, err := preprocessDir(in)
-		if err != nil {
-			t.Errorf("Error: %v", err)
-		}
+	for _, test := range testCases {
+		test := test
+		t.Run(test.directory, func(t *testing.T) {
+			t.Parallel()
 
-		//always check against the absolute path
-		checkAbs, _ := filepath.Abs(check)
+			out, err := preprocessDir(test.directory)
+			require.NoError(t, err)
 
-		if checkAbs != out {
-			t.Errorf("input %s\nexpected %s\n got %s", in, checkAbs, out)
-		}
+			// always check against the absolute path
+			expectedPath, _ := filepath.Abs(test.expected)
+			assert.Equal(t, expectedPath, out)
+		})
 	}
 }
 
 func TestPreprocessDirEnvVariablesExpansions(t *testing.T) {
-	expected, _ := filepath.Abs("/some/path/my/path")
+	err := os.Setenv("TEST_ENV_VARIABLE", "/some/path")
+	require.NoError(t, err)
+
 	in := "$TEST_ENV_VARIABLE/my/path"
-	os.Setenv("TEST_ENV_VARIABLE", "/some/path")
+
+	expectedPath, _ := filepath.Abs("/some/path/my/path")
 
 	out, err := preprocessDir(in)
-	if err != nil {
-		t.Errorf("Error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if out != expected {
-		t.Errorf("input %s\nexpected %s\n got %s", in, expected, out)
-	}
+	assert.Equal(t, expectedPath, out)
 }
 
 func TestFindFile(t *testing.T) {
 	result := findFile("nothing", []string{"", "$HOME/test", "toml"})
 
 	// expected
-	thisPath, err := filepath.Abs(".")
-	if err != nil {
-		t.Errorf("Error: %v", err)
-	}
+	here, err := filepath.Abs(".")
+	require.NoError(t, err)
 
-	expected := filepath.Join(thisPath, "toml", "nothing.toml")
-	if result != expected {
-		t.Errorf("Expected %s\ngot %s", expected, result)
-	}
+	expected := filepath.Join(here, "toml", "nothing.toml")
+	assert.Equal(t, expected, result)
 }
 
 type SliceStr []string
@@ -1609,19 +1531,14 @@ func TestTomlMissingCustomParser(t *testing.T) {
 	s.AddSource(toml)
 
 	_, err := s.LoadConfig()
-	if err != nil {
-		t.Errorf("Error %v", err)
-	}
+	require.NoError(t, err)
 
-	if err := s.Run(); err != nil {
-		t.Errorf("Error :%s", err)
-	}
+	err = s.Run()
+	require.NoError(t, err)
 
 	// expected
 	expected := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
-	if !reflect.DeepEqual(config, expected) {
-		t.Errorf("Expected %+v\ngot %+v", expected.PtrCustom, config.PtrCustom)
-	}
+	assert.Exactly(t, expected, config)
 }
 
 func TestFindFileSliceFileAndDirLastIf(t *testing.T) {
@@ -1630,9 +1547,7 @@ func TestFindFileSliceFileAndDirLastIf(t *testing.T) {
 	expected := filepath.Join(thisPath, "/toml/trivial.toml")
 	result := findFile("trivial", []string{"./toml/", "/any/other/path"})
 
-	if result != expected {
-		t.Errorf("Expected %s\nGot %s", expected, result)
-	}
+	assert.Equal(t, expected, result)
 }
 
 func TestFindFileSliceFileAndDirFirstIf(t *testing.T) {
@@ -1643,9 +1558,7 @@ func TestFindFileSliceFileAndDirFirstIf(t *testing.T) {
 	expected := filepath.Join(thisPath, "/toml/nothing.toml")
 	result := findFile(inFilename, inDirNfile)
 
-	if result != expected {
-		t.Errorf("Expected %s\nGot %s", expected, result)
-	}
+	assert.Equal(t, expected, result)
 }
 
 func TestRunWithoutLoadConfig(t *testing.T) {
@@ -1697,8 +1610,10 @@ func TestRunWithoutLoadConfig(t *testing.T) {
 	s.AddSource(toml)
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
+
 	// s.LoadConfig() IS MISSING
-	s.Run()
+	err := s.Run()
+	require.NoError(t, err)
 
 	expected := &StructPtr{
 		PtrStruct1: &Struct1{
@@ -1708,14 +1623,8 @@ func TestRunWithoutLoadConfig(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	if !reflect.DeepEqual(rootCmd.Config, expected) {
-		t.Errorf("\nexpected\t: %+v\ngot\t\t\t: %+v\n", expected, rootCmd.Config)
-	}
-
-	expectedOutput := `Run with config`
-	if !strings.Contains(b.String(), expectedOutput) {
-		t.Errorf("Error output doesn't contain %s,\ngot: %s", expectedOutput, &b)
-	}
+	assert.Exactly(t, expected, rootCmd.Config)
+	assert.Contains(t, b.String(), "Run with config")
 }
 
 func TestFlaegTomlSubCommandParseAllSources(t *testing.T) {
@@ -1770,20 +1679,14 @@ func TestFlaegTomlSubCommandParseAllSources(t *testing.T) {
 	s.AddSource(fs)
 
 	_, err := s.LoadConfig()
-	if err != nil {
-		t.Errorf("Error %v", err)
-	}
+	require.NoError(t, err)
 
-	if err = s.Run(); err != nil {
-		t.Errorf("Error %v", err)
-	}
+	err = s.Run()
+	require.NoError(t, err)
 
-	// Test
-	if !strings.Contains(b.String(), "subcmd") ||
-		!strings.Contains(b.String(), "Vstring:toto") ||
-		!strings.Contains(b.String(), "Vint:777") {
-		t.Errorf("expected: subcmd, Vstring = toto, Vint = 777\n got %s", b.String())
-	}
+	assert.Contains(t, b.String(), "subcmd")
+	assert.Contains(t, b.String(), "Vstring:toto")
+	assert.Contains(t, b.String(), "Vint:777")
 }
 
 func TestFlaegTomlSubCommandParseAllSourcesShouldError(t *testing.T) {
@@ -1846,9 +1749,6 @@ func TestFlaegTomlSubCommandParseAllSourcesShouldError(t *testing.T) {
 	s.AddSource(fs)
 
 	_, err := s.LoadConfig()
-
-	errExp := "Config type doesn't match with root command config type."
-	if err == nil || !strings.Contains(err.Error(), errExp) {
-		t.Errorf("Experted error %s\n got : %s", errExp, err)
-	}
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Config type doesn't match with root command config type.")
 }
