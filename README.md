@@ -272,6 +272,172 @@ You can also store your whole configuration structure into the KV Store:
 err := kv.StoreConfig(config)
 ```
 
+
+## Environment variables
+
+You can extract configuration values from your process environment:
+
+```go
+env := staert.NewEnvSource(prefix, separator, parsers)
+s.AddSource(env)
+```
+
+With this configuration, Stært will fetch from your environment all values according to your configuration structure.
+Field names are split by words according to camelCase, we rely on [github.com/fatih/camelcase](https://github.com/fatih/camelcase) to manage this.
+
+An environment variable name follows the pattern bellow:
+
+```html
+<PREFIX><SEP><MY><SEP><FIELD><SEP><NAME>
+```
+
+For instance if the `prefix` is `MyApp` and the `separator` is the `_` rune we'll have the following mapping:
+
+```go
+type Config struct {
+    MyStringField string // => MYAPP_MY_STRING_FIELD
+    MyIntField    int    // => MYAPP_MY_INT_FIELD
+}
+```
+
+Type conversion is attempted using the configured `parsers` (see Flæg documentation for custom parsers).
+If no parser is found for the given type, or if the parsing fails, an error is raised.
+
+### Initialization
+
+`EnvSource` can be initialized like this:
+
+```go
+envsource := staert.NewEnvSource(prefix, separator, parsers)
+```
+
+It takes three arguments:
+
+- A prefix used in order to format environment variables names to fetch. If left blank, no prefix will be applied to environment variables
+- A separator string. If left blank it will default to the `_` string
+- A map of `reflect.Type` to `parse.Parser` to configure special parsing. (see [Flæg custom parser documentation](https://github.com/containous/flaeg#custom-parsers))
+
+### Referenced values
+
+You can use pointers to values in your configuration structs.
+These fields will be mapped the same way as values.
+
+Again with the same configuration:
+
+```go
+type AppConfig struct {
+    Groot *int32 // => MYAPP_GROOT
+}
+```
+
+### Nested structures
+
+Nested structures are supported both by reference and value.
+
+Field names are then prefixed with the field name referencing the nested structure:
+
+```go
+type PtrNestedConfig struct {
+    AnArgument string // => MYAPP_FOO_AN_ARGUMENT
+}
+
+type ValueNestedConfig struct {
+    AnotherArgument string // => MYAPP_BAR_ANOTHER_ARGUMENT
+}
+
+type AppConfig struct {
+    Foo   *PtrNestedConfig
+    Bar   ValueNestedConfig
+}
+```
+
+### Embedded structures
+
+Embedded structures are supported, and environment variable name generation for a field will have the same behavior than a normal struct field.
+
+For instance if we keep our previous example configuration, we'll obtain the following mapping:
+
+```go
+type CommonConfig struct {
+    CommonString string // => MYAPP_COMMON_STRING
+}
+
+type AppConfig struct {
+    CommonConfig
+}
+```
+
+### Array/Slices
+
+Array elements can be configured by providing an index value between the array field name and the value:
+
+```go
+type AppConfig struct {
+     Slice []string
+}
+```
+
+```ini
+MYAPP_SLICE_0=foo
+MYAPP_SLICE_1=bar
+```
+
+The above configuration will give you a slice populated with `[foo, bar]`
+
+Arrays/Slices of pointers is handled the same way.
+
+#### Note
+
+- The index part of the environment variable is only used for **ordering** the elements, **not** for the actual array index
+- The size of the slice is increase dynamically based on the number of elements found
+
+### Array/Slices of struct
+
+For slices of struct we can map each field of the struct under an index :
+
+```go
+type SliceStruct struct {
+    Name string
+    Age int
+}
+type AppConfig struct {
+     Slice []SliceStruct
+}
+```
+
+```ini
+MYAPP_SLICE_0_NAME=Bart
+MYAPP_SLICE_0_AGE=14
+MYAPP_SLICE_1_NAME=Lisa
+MYAPP_SLICE_1_AGE=17
+```
+
+This will populate the slice with 2 elements : `Bart;14` and `Lisa;17`
+
+### Maps
+
+Maps are handled in a similar way as arrays and slices.
+
+The map key separates the variable name from the value:
+
+```go
+type AppConfig struct {
+     MyMap map[string]string
+}
+```
+
+```ini
+MYAPP_MY_MAP_key1=foo
+MYAPP_MY_MAP_key2=bar
+```
+
+The above configuration will give you a map populated with `[[key1, foo], [key2, bar]]`
+
+If the key type or value type is not `string`, a conversion is attempted using the configured parsers.
+If no parser is found for the given type, or if the parsing fails, an error is raised.
+
+Maps of structs are handled the same way as slices of structs.
+
 ## Contributing
 
 1. Fork it!
