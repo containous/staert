@@ -4,10 +4,270 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/containous/flaeg"
+	"github.com/containous/flaeg/parse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestTomlSource_Parse_Trivial(t *testing.T) {
+	src := NewTomlSource("trivial", []string{"./fixtures/", "/any/other/path"})
+
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	cmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	command, err := src.Parse(cmd)
+	require.NoError(t, err)
+	assert.Exactly(t, cmd, command)
+
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    28,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+		},
+		DurationField: parse.Duration(28 * time.Second),
+	}
+
+	assert.Exactly(t, expected, command.Config)
+}
+
+func TestTomlSource_Parse_FileNotFound(t *testing.T) {
+	src := NewTomlSource("nothing", []string{"../path", "/any/other/path"})
+
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	cmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	command, err := src.Parse(cmd)
+	require.NoError(t, err)
+
+	assert.Exactly(t, cmd, command)
+}
+
+func TestTomlSource_Parse_EmptyFile(t *testing.T) {
+	src := NewTomlSource("nothing", []string{"./fixtures/", "/any/other/path"})
+
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	cmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	command, err := src.Parse(cmd)
+	require.NoError(t, err)
+	assert.Exactly(t, cmd, command)
+
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, cmd.Config)
+}
+
+func TestTomlSource_Parse_FieldUnderPointer(t *testing.T) {
+	src := NewTomlSource("fieldUnderPointer", []string{"./fixtures/", "/any/other/path"})
+
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	cmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	command, err := src.Parse(cmd)
+	require.NoError(t, err)
+	assert.Exactly(t, cmd, command)
+
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+		},
+		DurationField: parse.Duration(42 * time.Second),
+	}
+
+	assert.Exactly(t, expected, cmd.Config)
+}
+
+func TestTomlSource_Parse_PointerUnderPointer(t *testing.T) {
+	src := NewTomlSource("pointerUnderPointer", []string{"./fixtures/", "/any/other/path"})
+
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	cmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	command, err := src.Parse(cmd)
+	require.NoError(t, err)
+	assert.Exactly(t, cmd, command)
+
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, cmd.Config)
+}
+
+func TestTomlSource_Parse_FieldUnderPointerUnderPointer(t *testing.T) {
+	src := NewTomlSource("fieldUnderPtrUnderPtr", []string{"./fixtures/", "/any/other/path"})
+
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	cmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	command, err := src.Parse(cmd)
+	require.NoError(t, err)
+	assert.Exactly(t, cmd, command)
+
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{
+				S3Float64: 28.28,
+			},
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, cmd.Config)
+}
+
+func TestTomlSource_Parse_Pointer(t *testing.T) {
+	src := NewTomlSource("pointer", []string{"./fixtures/", "/any/other/path"})
+
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	cmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	command, err := src.Parse(cmd)
+	require.NoError(t, err)
+	assert.Exactly(t, cmd, command)
+
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringDefaultPointersConfig",
+			S2Bool:   false,
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, cmd.Config)
+}
 
 func Test_preProcessDir(t *testing.T) {
 	here, err := filepath.Abs(".")
