@@ -20,10 +20,7 @@ type Staert struct {
 
 // NewStaert creates and return a pointer on Staert. Need defaultConfig and defaultPointersConfig given by references
 func NewStaert(rootCommand *flaeg.Command) *Staert {
-	s := Staert{
-		command: rootCommand,
-	}
-	return &s
+	return &Staert{command: rootCommand}
 }
 
 // AddSource adds new Source to Staert, give it by reference
@@ -31,34 +28,21 @@ func (s *Staert) AddSource(src Source) {
 	s.sources = append(s.sources, src)
 }
 
-// parseConfigAllSources getConfig for a flaeg.Command run sources Parse func in the raw
-func (s *Staert) parseConfigAllSources(cmd *flaeg.Command) error {
-	for _, src := range s.sources {
-		var err error
-		_, err = src.Parse(cmd)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // LoadConfig check which command is called and parses config
 // It returns the the parsed config or an error if it fails
 func (s *Staert) LoadConfig() (interface{}, error) {
 	for _, src := range s.sources {
 		// Type assertion
-		f, ok := src.(*flaeg.Flaeg)
-		if ok {
-			fCmd, err := f.GetCommand()
+		if flg, ok := src.(*flaeg.Flaeg); ok {
+			fCmd, err := flg.GetCommand()
 			if err != nil {
 				return nil, err
 			}
 
+			// if fleag sub-command
 			if s.command != fCmd {
-				// if fleag sub-command
+				// if parseAllSources
 				if fCmd.Metadata["parseAllSources"] == "true" {
-					// if parseAllSources
 					fCmdConfigType := reflect.TypeOf(fCmd.Config)
 					sCmdConfigType := reflect.TypeOf(s.command.Config)
 					if fCmdConfigType != sCmdConfigType {
@@ -68,7 +52,7 @@ func (s *Staert) LoadConfig() (interface{}, error) {
 					s.command = fCmd
 				} else {
 					// (not parseAllSources)
-					s.command, err = f.Parse(fCmd)
+					s.command, err = flg.Parse(fCmd)
 					return s.command.Config, err
 				}
 			}
@@ -76,6 +60,17 @@ func (s *Staert) LoadConfig() (interface{}, error) {
 	}
 	err := s.parseConfigAllSources(s.command)
 	return s.command.Config, err
+}
+
+// parseConfigAllSources getConfig for a flaeg.Command run sources Parse func in the raw
+func (s *Staert) parseConfigAllSources(cmd *flaeg.Command) error {
+	for _, src := range s.sources {
+		_, err := src.Parse(cmd)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Run calls the Run func of the command
