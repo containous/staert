@@ -2,6 +2,7 @@ package staert
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -55,6 +56,12 @@ type StructCustomParser struct {
 	CustomField SliceStr `description:"CustomField which requires custom parser"`
 }
 
+type ErrorSource struct{}
+
+func (e *ErrorSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
+	return nil, errors.New("fail")
+}
+
 func defaultPointersConfig() *StructPtr {
 	return &StructPtr{
 		PtrStruct1: &Struct1{
@@ -73,133 +80,23 @@ func defaultPointersConfig() *StructPtr {
 	}
 }
 
-func Test_parseConfigAllSources_flaegSourceNoArgs(t *testing.T) {
-	config := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	rootCmd := &flaeg.Command{
+func Test_parseConfigAllSources_propagateError(t *testing.T) {
+	cmd := &flaeg.Command{
 		Name:                  "test",
 		Description:           "description test",
-		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig(),
+		Config:                &StructPtr{},
+		DefaultPointersConfig: &StructPtr{},
 		Run: func() error {
 			return nil
 		},
 	}
 
-	s := NewStaert(rootCmd)
+	s := NewStaert(cmd)
 
-	var args []string
-	fs := flaeg.New(rootCmd, args)
-	s.AddSource(fs)
+	s.AddSource(&ErrorSource{})
 
-	err := s.parseConfigAllSources(rootCmd)
-	require.NoError(t, err)
-
-	expected := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	assert.Exactly(t, expected, rootCmd.Config)
-}
-
-func Test_parseConfigAllSources_flaegSourcePtrUnderPtrArgs(t *testing.T) {
-	config := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	args := []string{
-		"--ptrstruct1.s1ptrstruct3",
-	}
-
-	rootCmd := &flaeg.Command{
-		Name:                  "test",
-		Description:           "description test",
-		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig(),
-		Run: func() error {
-			return nil
-		},
-	}
-
-	s := NewStaert(rootCmd)
-
-	fs := flaeg.New(rootCmd, args)
-	s.AddSource(fs)
-
-	err := s.parseConfigAllSources(rootCmd)
-	require.NoError(t, err)
-
-	expected := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	assert.Exactly(t, expected, rootCmd.Config)
-}
-
-func Test_parseConfigAllSources_flaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
-	config := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	args := []string{
-		"--ptrstruct1.s1ptrstruct3.s3float64=55.55",
-	}
-
-	rootCmd := &flaeg.Command{
-		Name:                  "test",
-		Description:           "description test",
-		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig(),
-		Run: func() error {
-			return nil
-		},
-	}
-
-	s := NewStaert(rootCmd)
-
-	fs := flaeg.New(rootCmd, args)
-	s.AddSource(fs)
-
-	err := s.parseConfigAllSources(rootCmd)
-	require.NoError(t, err)
-
-	expected := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-			S1PtrStruct3: &Struct3{
-				S3Float64: 55.55,
-			},
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	assert.Exactly(t, expected, rootCmd.Config)
+	err := s.parseConfigAllSources(cmd)
+	require.Error(t, err)
 }
 
 func Test_parseConfigAllSources_mergeFlaegWithoutArgsAndEmptyToml(t *testing.T) {
@@ -293,7 +190,7 @@ func Test_parseConfigAllSources_mergeFlaegFieldUnderPointerUnderPointerAndEmptyT
 	assert.Exactly(t, expected, rootCmd.Config)
 }
 
-func Test_parseConfigAllSources_mergeOverrideFlaegArgsAndTomlField(t *testing.T) {
+func Test_parseConfigAllSources_mergeOverrideFlaegArgsByTomlField(t *testing.T) {
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    1,
