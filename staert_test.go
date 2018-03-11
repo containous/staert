@@ -40,16 +40,23 @@ type Struct3 struct {
 	S3Float64 float64 `description:"Struct 3 float64"`
 }
 
-func TestFlaegSourceNoArgs(t *testing.T) {
-	config := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-		},
-		DurationField: parse.Duration(time.Second),
-	}
+// Version Config
+type VersionConfig struct {
+	Version string `short:"v" description:"Version"`
+}
 
-	defaultPointersConfig := &StructPtr{
+type SliceStr []string
+
+type StructPtrCustom struct {
+	PtrCustom *StructCustomParser `description:"Ptr on StructCustomParser"`
+}
+
+type StructCustomParser struct {
+	CustomField SliceStr `description:"CustomField which requires custom parser"`
+}
+
+func defaultPointersConfig() *StructPtr {
+	return &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    11,
 			S1String: "S1StringDefaultPointersConfig",
@@ -64,20 +71,31 @@ func TestFlaegSourceNoArgs(t *testing.T) {
 			S2Bool:   false,
 		},
 	}
+}
+
+func Test_parseConfigAllSources_flaegSourceNoArgs(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
 
 	// Test
 	rootCmd := &flaeg.Command{
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			return nil
 		},
 	}
 
-	var args []string
 	s := NewStaert(rootCmd)
+
+	var args []string
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
@@ -96,29 +114,13 @@ func TestFlaegSourceNoArgs(t *testing.T) {
 	assert.Exactly(t, expected, rootCmd.Config)
 }
 
-func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
+func Test_parseConfigAllSources_flaegSourcePtrUnderPtrArgs(t *testing.T) {
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
 		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
 	}
 
 	args := []string{
@@ -130,13 +132,14 @@ func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			return nil
 		},
 	}
 
 	s := NewStaert(rootCmd)
+
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
@@ -158,29 +161,13 @@ func TestFlaegSourcePtrUnderPtrArgs(t *testing.T) {
 	assert.Exactly(t, expected, rootCmd.Config)
 }
 
-func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
+func Test_parseConfigAllSources_flaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
 		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
 	}
 
 	args := []string{
@@ -192,13 +179,14 @@ func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			return nil
 		},
 	}
 
 	s := NewStaert(rootCmd)
+
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
 
@@ -220,7 +208,7 @@ func TestFlaegSourceFieldUnderPtrUnderPtrArgs(t *testing.T) {
 	assert.Exactly(t, expected, rootCmd.Config)
 }
 
-func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
+func Test_parseConfigAllSources_tomlSourceErrorFileNotFound(t *testing.T) {
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    1,
@@ -229,7 +217,181 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	defaultPointersConfig := &StructPtr{
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	expectedCmd := *rootCmd
+
+	s := NewStaert(rootCmd)
+
+	toml := NewTomlSource("nothing", []string{"../path", "/any/other/path"})
+	s.AddSource(toml)
+
+	// expected
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	assert.Exactly(t, expectedCmd.Config, rootCmd.Config)
+	assert.Exactly(t, expectedCmd.DefaultPointersConfig, rootCmd.DefaultPointersConfig)
+}
+
+func Test_parseConfigAllSources_tomlSourceTrivial(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+
+	toml := NewTomlSource("trivial", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    28,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+		},
+		DurationField: parse.Duration(28 * time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_tomlSourceEmpty(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+
+	toml := NewTomlSource("nothing", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_tomlSourceFieldUnderPointer(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+
+	toml := NewTomlSource("fieldUnderPointer", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    11,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+		},
+		DurationField: parse.Duration(42 * time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_tomlSourcePointerUnderPointer(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("pointerUnderPointer", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    11,
 			S1String: "S1StringDefaultPointersConfig",
@@ -238,11 +400,106 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 				S3Float64: 11.11,
 			},
 		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_tomlSourceFieldUnderPointerUnderPointer(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+
+	toml := NewTomlSource("fieldUnderPtrUnderPtr", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{
+				S3Float64: 28.28,
+			},
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_tomlSourcePointer(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("pointer", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
 		PtrStruct2: &Struct2{
 			S2Int64:  22,
 			S2String: "S2StringDefaultPointersConfig",
 			S2Bool:   false,
 		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_mergeFlaegWithoutArgsAndEmptyToml(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
 	}
 
 	var args []string
@@ -252,15 +509,17 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			return nil
 		},
 	}
 
 	s := NewStaert(rootCmd)
+
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
+
 	toml := NewTomlSource("nothing", []string{"./fixtures/", "/any/other/path"})
 	s.AddSource(toml)
 
@@ -279,29 +538,13 @@ func TestMergeFlaegNoArgsTomlNothing(t *testing.T) {
 	assert.Exactly(t, expected, rootCmd.Config)
 }
 
-func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
+func Test_parseConfigAllSources_mergeFlaegFieldUnderPointerUnderPointerAndEmptyToml(t *testing.T) {
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
 		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
 	}
 
 	args := []string{
@@ -313,15 +556,17 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			return nil
 		},
 	}
 
 	s := NewStaert(rootCmd)
+
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
+
 	toml := NewTomlSource("nothing", []string{"./fixtures/", "/any/other/path"})
 	s.AddSource(toml)
 
@@ -343,29 +588,13 @@ func TestMergeFlaegFieldUnderPointerUnderPointerTomlNothing(t *testing.T) {
 	assert.Exactly(t, expected, rootCmd.Config)
 }
 
-func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
+func Test_parseConfigAllSources_mergeOverrideFlaegArgsAndTomlField(t *testing.T) {
 	config := &StructPtr{
 		PtrStruct1: &Struct1{
 			S1Int:    1,
 			S1String: "S1StringInitConfig",
 		},
 		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
 	}
 
 	args := []string{
@@ -379,15 +608,17 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			return nil
 		},
 	}
 
 	s := NewStaert(rootCmd)
+
 	fs := flaeg.New(rootCmd, args)
 	s.AddSource(fs)
+
 	toml := NewTomlSource("trivial", []string{"./fixtures/", "/any/other/path"})
 	s.AddSource(toml)
 
@@ -412,7 +643,200 @@ func TestMergeFlaegManyArgsTomlOverwriteField(t *testing.T) {
 	assert.Exactly(t, expected, rootCmd.Config)
 }
 
-func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
+func Test_parseConfigAllSources_mergeEmptyTomlAndFlaegWithoutArgs(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	var args []string
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("nothing", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_mergeTomlFieldUnderPointerUnderPointerAndFlaegWithoutArgs(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	var args []string
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+
+	toml := NewTomlSource("fieldUnderPtrUnderPtr", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+			S1PtrStruct3: &Struct3{
+				S3Float64: 28.28,
+			},
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_mergeTomlTrivialAndFlaegOverwriteField(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	args := []string{"--ptrstruct1.s1int=55"}
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+
+	toml := NewTomlSource("trivial", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    55,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+		},
+		DurationField: parse.Duration(28 * time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func Test_parseConfigAllSources_mergeTomlPointerUnderPointerAndFlaegArgs(t *testing.T) {
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
+		},
+		DurationField: parse.Duration(time.Second),
+	}
+
+	args := []string{
+		"--ptrstruct1.s1int=55",
+		"--durationfield=55s",
+		"--ptrstruct2.s2string=S2StringFlaeg",
+	}
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+	toml := NewTomlSource("pointerUnderPointer", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+
+	err := s.parseConfigAllSources(rootCmd)
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    55,
+			S1String: "S1StringDefaultPointersConfig",
+			S1Bool:   true,
+			S1PtrStruct3: &Struct3{
+				S3Float64: 11.11,
+			},
+		},
+		PtrStruct2: &Struct2{
+			S2Int64:  22,
+			S2String: "S2StringFlaeg",
+			S2Bool:   false,
+		},
+		DurationField: parse.Duration(55 * time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+}
+
+func TestRun_withoutLoadConfig(t *testing.T) {
 	// use buffer instead of stdout
 	var b bytes.Buffer
 
@@ -424,20 +848,56 @@ func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
 		DurationField: parse.Duration(time.Second),
 	}
 
-	defaultPointersConfig := &StructPtr{
+	args := []string{
+		"--ptrstruct2",
+	}
+
+	// Test
+	rootCmd := &flaeg.Command{
+		Name:                  "test",
+		Description:           "description test",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig(),
+		Run: func() error {
+			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
+			return nil
+		},
+	}
+
+	s := NewStaert(rootCmd)
+
+	toml := NewTomlSource("trivial", []string{"./fixtures/", "/any/other/path"})
+	s.AddSource(toml)
+
+	fs := flaeg.New(rootCmd, args)
+	s.AddSource(fs)
+
+	// s.LoadConfig() IS MISSING
+	err := s.Run()
+	require.NoError(t, err)
+
+	expected := &StructPtr{
 		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
 		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
+		DurationField: parse.Duration(time.Second),
+	}
+
+	assert.Exactly(t, expected, rootCmd.Config)
+	assert.Contains(t, b.String(), "Run with config")
+}
+
+func TestRun_flaegFieldUnderPtrUnderPtr1(t *testing.T) {
+	// use buffer instead of stdout
+	var b bytes.Buffer
+
+	config := &StructPtr{
+		PtrStruct1: &Struct1{
+			S1Int:    1,
+			S1String: "S1StringInitConfig",
 		},
+		DurationField: parse.Duration(time.Second),
 	}
 
 	args := []string{
@@ -449,7 +909,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			check := &StructPtr{
@@ -483,12 +943,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr1Command(t *testing.T) {
 	assert.Contains(t, b.String(), "Run with config")
 }
 
-// Version Config
-type VersionConfig struct {
-	Version string `short:"v" description:"Version"`
-}
-
-func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
+func TestRun_flaegFieldUnderPtrUnderPtr2(t *testing.T) {
 	// use buffer instead of stdout
 	var b bytes.Buffer
 
@@ -498,22 +953,6 @@ func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 			S1String: "S1StringInitConfig",
 		},
 		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
 	}
 
 	// init version config
@@ -527,7 +966,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			check := &StructPtr{
@@ -566,8 +1005,8 @@ func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 		},
 	}
 
-	// test
 	s := NewStaert(rootCmd)
+
 	fs := flaeg.New(rootCmd, args)
 	fs.AddCommand(versionCmd)
 	s.AddSource(fs)
@@ -582,7 +1021,7 @@ func TestRunFlaegFieldUnderPtrUnderPtr2Command(t *testing.T) {
 	assert.Contains(t, b.String(), "Run with config")
 }
 
-func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
+func TestRun_flaegVersion2CallVersion(t *testing.T) {
 	// use buffer instead of stdout
 	var b bytes.Buffer
 
@@ -592,22 +1031,6 @@ func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 			S1String: "S1StringInitConfig",
 		},
 		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
 	}
 
 	// init version config
@@ -623,7 +1046,7 @@ func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			check := &StructPtr{
@@ -662,8 +1085,8 @@ func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 		},
 	}
 
-	// Test
 	s := NewStaert(rootCmd)
+
 	fs := flaeg.New(rootCmd, args)
 	fs.AddCommand(versionCmd)
 	s.AddSource(fs)
@@ -678,7 +1101,7 @@ func TestRunFlaegVersion2CommandCallVersion(t *testing.T) {
 	assert.Contains(t, b.String(), "Version 2.2beta")
 }
 
-func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
+func TestRun_mergeFlaegToml2CallRootCmd(t *testing.T) {
 	// use buffer instead of stdout
 	var b bytes.Buffer
 
@@ -688,22 +1111,6 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 			S1String: "S1StringInitConfig",
 		},
 		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
 	}
 
 	// init version config
@@ -720,7 +1127,7 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 		Name:                  "test",
 		Description:           "description test",
 		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
+		DefaultPointersConfig: defaultPointersConfig(),
 		Run: func() error {
 			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
 			// expected
@@ -765,9 +1172,11 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 	}
 
 	s := NewStaert(rootCmd)
+
 	fs := flaeg.New(rootCmd, args)
 	fs.AddCommand(versionCmd)
 	s.AddSource(fs)
+
 	toml := NewTomlSource("trivial", []string{"./fixtures/", "/any/other/path"})
 	s.AddSource(toml)
 
@@ -781,167 +1190,7 @@ func TestRunMergeFlaegToml2CommmandCallRootCmd(t *testing.T) {
 	assert.Contains(t, b.String(), "Run with config :")
 }
 
-func TestTomlSourceErrorFileNotFound(t *testing.T) {
-	config := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
-	}
-
-	// Test
-	rootCmd := &flaeg.Command{
-		Name:                  "test",
-		Description:           "description test",
-		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
-		Run: func() error {
-			return nil
-		},
-	}
-
-	expectedCmd := *rootCmd
-	s := NewStaert(rootCmd)
-	toml := NewTomlSource("nothing", []string{"../path", "/any/other/path"})
-	s.AddSource(toml)
-
-	// expected
-	err := s.parseConfigAllSources(rootCmd)
-	require.NoError(t, err)
-
-	assert.Exactly(t, expectedCmd.Config, rootCmd.Config)
-	assert.Exactly(t, expectedCmd.DefaultPointersConfig, rootCmd.DefaultPointersConfig)
-}
-
-type SliceStr []string
-
-type StructPtrCustom struct {
-	PtrCustom *StructCustomParser `description:"Ptr on StructCustomParser"`
-}
-
-type StructCustomParser struct {
-	CustomField SliceStr `description:"CustomField which requires custom parser"`
-}
-
-func TestTomlMissingCustomParser(t *testing.T) {
-	config := &StructPtrCustom{}
-
-	defaultPointersConfig := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
-
-	command := &flaeg.Command{
-		Name:                  "MissingCustomParser",
-		Description:           "This is an example of description",
-		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
-		Run: func() error {
-			// expected
-			check := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
-			if !reflect.DeepEqual(config, check) {
-				return fmt.Errorf("Expected %+v\ngot %+v", check.PtrCustom, config.PtrCustom)
-			}
-			return nil
-		},
-	}
-
-	s := NewStaert(command)
-	toml := NewTomlSource("missingCustomParser", []string{"fixtures"})
-	s.AddSource(toml)
-
-	_, err := s.LoadConfig()
-	require.NoError(t, err)
-
-	err = s.Run()
-	require.NoError(t, err)
-
-	// expected
-	expected := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
-	assert.Exactly(t, expected, config)
-}
-
-func TestRunWithoutLoadConfig(t *testing.T) {
-	// use buffer instead of stdout
-	var b bytes.Buffer
-
-	config := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	defaultPointersConfig := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    11,
-			S1String: "S1StringDefaultPointersConfig",
-			S1Bool:   true,
-			S1PtrStruct3: &Struct3{
-				S3Float64: 11.11,
-			},
-		},
-		PtrStruct2: &Struct2{
-			S2Int64:  22,
-			S2String: "S2StringDefaultPointersConfig",
-			S2Bool:   false,
-		},
-	}
-
-	args := []string{
-		"--ptrstruct2",
-	}
-
-	// Test
-	rootCmd := &flaeg.Command{
-		Name:                  "test",
-		Description:           "description test",
-		Config:                config,
-		DefaultPointersConfig: defaultPointersConfig,
-		Run: func() error {
-			fmt.Fprintf(&b, "Run with config :\n%+v\n", config)
-			return nil
-		},
-	}
-
-	s := NewStaert(rootCmd)
-	toml := NewTomlSource("trivial", []string{"./fixtures/", "/any/other/path"})
-	s.AddSource(toml)
-	fs := flaeg.New(rootCmd, args)
-	s.AddSource(fs)
-
-	// s.LoadConfig() IS MISSING
-	err := s.Run()
-	require.NoError(t, err)
-
-	expected := &StructPtr{
-		PtrStruct1: &Struct1{
-			S1Int:    1,
-			S1String: "S1StringInitConfig",
-		},
-		DurationField: parse.Duration(time.Second),
-	}
-
-	assert.Exactly(t, expected, rootCmd.Config)
-	assert.Contains(t, b.String(), "Run with config")
-}
-
-func TestFlaegTomlSubCommandParseAllSources(t *testing.T) {
+func TestRun_flaegTomlSubCommandParseAllSources(t *testing.T) {
 	// use buffer instead of stdout
 	var b bytes.Buffer
 
@@ -986,8 +1235,10 @@ func TestFlaegTomlSubCommandParseAllSources(t *testing.T) {
 	}
 
 	s := NewStaert(rootCmd)
+
 	toml := NewTomlSource("subcmd", []string{"./fixtures/", "/any/other/path"})
 	s.AddSource(toml)
+
 	fs := flaeg.New(rootCmd, args)
 	fs.AddCommand(subCmd)
 	s.AddSource(fs)
@@ -1003,7 +1254,42 @@ func TestFlaegTomlSubCommandParseAllSources(t *testing.T) {
 	assert.Contains(t, b.String(), "Vint:777")
 }
 
-func TestFlaegTomlSubCommandParseAllSourcesShouldError(t *testing.T) {
+func TestLoadConfig_tomlMissingCustomParser(t *testing.T) {
+	config := &StructPtrCustom{}
+
+	defaultPointersConfig := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
+
+	command := &flaeg.Command{
+		Name:                  "MissingCustomParser",
+		Description:           "This is an example of description",
+		Config:                config,
+		DefaultPointersConfig: defaultPointersConfig,
+		Run: func() error {
+			// expected
+			check := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
+			if !reflect.DeepEqual(config, check) {
+				return fmt.Errorf("Expected %+v\ngot %+v", check.PtrCustom, config.PtrCustom)
+			}
+			return nil
+		},
+	}
+
+	s := NewStaert(command)
+	toml := NewTomlSource("missingCustomParser", []string{"fixtures"})
+	s.AddSource(toml)
+
+	_, err := s.LoadConfig()
+	require.NoError(t, err)
+
+	err = s.Run()
+	require.NoError(t, err)
+
+	// expected
+	expected := &StructPtrCustom{&StructCustomParser{SliceStr{"str1", "str2"}}}
+	assert.Exactly(t, expected, config)
+}
+
+func TestLoadConfig_flaegTomlSubCommandParseAllSourcesShouldError(t *testing.T) {
 	// use buffer instead of stdout
 	var b bytes.Buffer
 
