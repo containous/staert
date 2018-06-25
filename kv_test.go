@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"errors"
+
 	"github.com/abronan/valkeyrie/store"
 	"github.com/containous/flaeg"
 	"github.com/containous/flaeg/parse"
@@ -856,6 +858,59 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 	assert.Exactly(t, expected, kv)
 }
 
+func TestListRecursiveWithUnknownPrefix(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			Error: false,
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/l1", Value: []byte("")},
+			},
+			WatchTreeMethod: nil,
+			ListError:       store.ErrKeyNotFound,
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	require.NoError(t, err)
+	assert.Len(t, pairs, 0)
+}
+
+func TestListRecursiveWithGetError(t *testing.T) {
+	myError := errors.New("a GET error")
+	kv := &KvSource{
+		&Mock{
+			GetError: myError,
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/l1", Value: []byte("")},
+			},
+			WatchTreeMethod: nil,
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	assert.Equal(t, err, myError)
+	assert.Len(t, pairs, 0)
+}
+
+func TestListRecursiveWithError(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			ListError: errors.New("another error"),
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/l1", Value: []byte("")},
+			},
+			WatchTreeMethod: nil,
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	assert.NotNil(t, err)
+	assert.Len(t, pairs, 0)
+}
+
 func TestTestListRecursiveWithPrefixSamePrefix(t *testing.T) {
 	kv := &KvSource{
 		&Mock{
@@ -928,10 +983,46 @@ func TestListRecursiveEmpty(t *testing.T) {
 	assert.Exactly(t, expected, pairs)
 }
 
+func TestFetchValuedPairWithUnknownPrefix(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			Error: false,
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/l1", Value: []byte("")},
+			},
+			WatchTreeMethod: nil,
+			ListError:       store.ErrKeyNotFound,
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.FetchValuedPairWithPrefix(kv.Prefix, pairs)
+	require.NoError(t, err)
+	assert.Len(t, pairs, 0)
+}
+
+func TestFetchValuedPairWithError(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			ListError: errors.New("another error"),
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/l1", Value: []byte("")},
+			},
+			WatchTreeMethod: nil,
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.FetchValuedPairWithPrefix(kv.Prefix, pairs)
+	assert.NotNil(t, err)
+	assert.Len(t, pairs, 0)
+}
+
 func TestFetchValuedPairWithPrefix5Levels(t *testing.T) {
 	kv := &KvSource{
 		&Mock{
 			KVPairs: []*store.KVPair{
+				{Key: "prefix/", Value: []byte("")},
 				{Key: "prefix/l1", Value: []byte("level1")},
 				{Key: "prefix/d1/l1", Value: []byte("level2")},
 				{Key: "prefix/d1/l2", Value: []byte("level2")},
