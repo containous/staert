@@ -47,7 +47,7 @@ func (kv *KvSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 // LoadConfig loads data from the KV Store into the config structure (given by reference)
 func (kv *KvSource) LoadConfig(config interface{}) error {
 	pairs := map[string][]byte{}
-	if err := kv.ListRecursive(kv.Prefix, pairs); err != nil {
+	if err := kv.FetchValuedPairWithPrefix(kv.Prefix, pairs); err != nil {
 		return err
 	}
 	// fmt.Printf("pairs : %#v\n", pairs)
@@ -327,8 +327,8 @@ func writeCompressedData(data []byte) (string, error) {
 	return buffer.String(), nil
 }
 
-// ListRecursive lists all key value children under key
-func (kv *KvSource) ListRecursive(key string, pairs map[string][]byte) error {
+// FetchValuedPairWithPrefix lists all key value children under key
+func (kv *KvSource) FetchValuedPairWithPrefix(key string, pairs map[string][]byte) error {
 	pairsN1, err := kv.List(key, nil)
 	if err == store.ErrKeyNotFound {
 		return nil
@@ -336,23 +336,13 @@ func (kv *KvSource) ListRecursive(key string, pairs map[string][]byte) error {
 	if err != nil {
 		return err
 	}
-	if len(pairsN1) == 0 {
-		pairLeaf, err := kv.Get(key, nil)
-		if err != nil {
-			return err
-		}
-		if pairLeaf == nil {
-			return nil
-		}
-		pairs[pairLeaf.Key] = pairLeaf.Value
-		return nil
-	}
+
 	for _, p := range pairsN1 {
-		err := kv.ListRecursive(p.Key, pairs)
-		if err != nil {
-			return err
+		if len(p.Value) > 0 {
+			pairs[p.Key] = p.Value
 		}
 	}
+
 	return nil
 }
 
