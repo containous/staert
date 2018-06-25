@@ -3,12 +3,11 @@ package staert
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
-
-	"errors"
 
 	"github.com/abronan/valkeyrie/store"
 	"github.com/containous/flaeg"
