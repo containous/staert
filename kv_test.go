@@ -856,6 +856,52 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 	assert.Exactly(t, expected, kv)
 }
 
+func TestListRecursive5Levels(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/l1", Value: []byte("level1")},
+				{Key: "prefix/d1/l1", Value: []byte("level2")},
+				{Key: "prefix/d1/l2", Value: []byte("level2")},
+				{Key: "prefix/d2/d1/l1", Value: []byte("level3")},
+				{Key: "prefix/d3/d2/d1/d1/d1", Value: []byte("level5")},
+			},
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	require.NoError(t, err)
+
+	expected := map[string][]byte{
+		"prefix/l1":             []byte("level1"),
+		"prefix/d1/l1":          []byte("level2"),
+		"prefix/d1/l2":          []byte("level2"),
+		"prefix/d2/d1/l1":       []byte("level3"),
+		"prefix/d3/d2/d1/d1/d1": []byte("level5"),
+	}
+
+	assert.Exactly(t, expected, pairs)
+}
+
+func TestListRecursiveEmpty(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{},
+		},
+		"prefix",
+	}
+
+	pairs := map[string][]byte{}
+
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	require.NoError(t, err)
+
+	expected := map[string][]byte{}
+
+	assert.Exactly(t, expected, pairs)
+}
+
 func TestFetchValuedPairWithPrefix5Levels(t *testing.T) {
 	kv := &KvSource{
 		&Mock{

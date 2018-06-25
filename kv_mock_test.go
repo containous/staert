@@ -63,7 +63,7 @@ func (s *Mock) List(prefix string, options *store.ReadOptions) ([]*store.KVPair,
 
 	var kv []*store.KVPair
 	for _, kvPair := range s.KVPairs {
-		if strings.HasPrefix(kvPair.Key, prefix) {
+		if strings.HasPrefix(kvPair.Key, prefix) && kvPair.Key != prefix {
 			kv = append(kv, kvPair)
 		}
 	}
