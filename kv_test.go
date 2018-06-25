@@ -856,6 +856,32 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 	assert.Exactly(t, expected, kv)
 }
 
+func TestTestListRecursiveWithPrefixSamePrefix(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{Key: "prefix", Value: []byte("")},
+				{Key: "prefix/tls", Value: []byte("")},
+				{Key: "prefix/tls/ca", Value: []byte("v1")},
+				{Key: "prefix/tls/caOptional", Value: []byte("v2")},
+				{Key: "otherprefix/tls/ca", Value: []byte("other")},
+			},
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.ListRecursive(kv.Prefix, pairs)
+	require.NoError(t, err)
+
+	// Show the issue with the ListRecursive
+	expected := map[string][]byte{
+		"prefix/tls/caOptional": []byte("v2"),
+		// missing the "prefix/tls/ca"
+	}
+
+	assert.Exactly(t, expected, pairs)
+}
+
 func TestListRecursive5Levels(t *testing.T) {
 	kv := &KvSource{
 		&Mock{
