@@ -799,7 +799,7 @@ func TestStoreConfigEmbeddedSquash(t *testing.T) {
 
 	result := map[string][]byte{}
 
-	err = kv.ListRecursive("prefix", result)
+	err = kv.FetchValuedPairWithPrefix("prefix", result)
 	require.NoError(t, err)
 
 	assert.Len(t, result, len(expected))
@@ -856,7 +856,7 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 	assert.Exactly(t, expected, kv)
 }
 
-func TestListRecursive5Levels(t *testing.T) {
+func TestFetchValuedPairWithPrefix5Levels(t *testing.T) {
 	kv := &KvSource{
 		&Mock{
 			KVPairs: []*store.KVPair{
@@ -870,7 +870,7 @@ func TestListRecursive5Levels(t *testing.T) {
 		"prefix",
 	}
 	pairs := map[string][]byte{}
-	err := kv.ListRecursive(kv.Prefix, pairs)
+	err := kv.FetchValuedPairWithPrefix(kv.Prefix, pairs)
 	require.NoError(t, err)
 
 	expected := map[string][]byte{
@@ -884,7 +884,32 @@ func TestListRecursive5Levels(t *testing.T) {
 	assert.Exactly(t, expected, pairs)
 }
 
-func TestListRecursiveEmpty(t *testing.T) {
+func TestFetchValuedPairWithPrefixSamePrefix(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{Key: "prefix", Value: []byte("")},
+				{Key: "prefix/tls", Value: []byte("")},
+				{Key: "prefix/tls/ca", Value: []byte("v1")},
+				{Key: "prefix/tls/caOptional", Value: []byte("v2")},
+				{Key: "otherprefix/tls/ca", Value: []byte("other")},
+			},
+		},
+		"prefix",
+	}
+	pairs := map[string][]byte{}
+	err := kv.FetchValuedPairWithPrefix(kv.Prefix, pairs)
+	require.NoError(t, err)
+
+	expected := map[string][]byte{
+		"prefix/tls/ca":         []byte("v1"),
+		"prefix/tls/caOptional": []byte("v2"),
+	}
+
+	assert.Exactly(t, expected, pairs)
+}
+
+func TestFetchValuedPairWithPrefixEmpty(t *testing.T) {
 	kv := &KvSource{
 		&Mock{
 			KVPairs: []*store.KVPair{},
@@ -894,7 +919,7 @@ func TestListRecursiveEmpty(t *testing.T) {
 
 	pairs := map[string][]byte{}
 
-	err := kv.ListRecursive(kv.Prefix, pairs)
+	err := kv.FetchValuedPairWithPrefix(kv.Prefix, pairs)
 	require.NoError(t, err)
 
 	expected := map[string][]byte{}

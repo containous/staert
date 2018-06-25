@@ -60,17 +60,11 @@ func (s *Mock) List(prefix string, options *store.ReadOptions) ([]*store.KVPair,
 	if s.Error {
 		return nil, errors.New("error")
 	}
+
 	var kv []*store.KVPair
 	for _, kvPair := range s.KVPairs {
-		if strings.HasPrefix(kvPair.Key, prefix+"/") {
-			if secondSlashIndex := strings.IndexRune(kvPair.Key[len(prefix)+1:], '/'); secondSlashIndex == -1 {
-				kv = append(kv, kvPair)
-			} else {
-				dir := &store.KVPair{
-					Key: kvPair.Key[:secondSlashIndex+len(prefix)+1],
-				}
-				kv = append(kv, dir)
-			}
+		if strings.HasPrefix(kvPair.Key, prefix) {
+			kv = append(kv, kvPair)
 		}
 	}
 	return kv, nil
