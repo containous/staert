@@ -3,6 +3,7 @@ package staert
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -797,9 +798,7 @@ func TestStoreConfigEmbeddedSquash(t *testing.T) {
 		"prefix/vfoo": "toto",
 	}
 
-	result := map[string][]byte{}
-
-	err = kv.ListRecursive("prefix", result)
+	result, err := kv.ListValuedPairWithPrefix("prefix")
 	require.NoError(t, err)
 
 	assert.Len(t, result, len(expected))
@@ -856,50 +855,230 @@ func TestCollateKvPairsShortNameUnexported(t *testing.T) {
 	assert.Exactly(t, expected, kv)
 }
 
-func TestListRecursive5Levels(t *testing.T) {
-	kv := &KvSource{
-		&Mock{
-			KVPairs: []*store.KVPair{
-				{Key: "prefix/l1", Value: []byte("level1")},
-				{Key: "prefix/d1/l1", Value: []byte("level2")},
-				{Key: "prefix/d1/l2", Value: []byte("level2")},
-				{Key: "prefix/d2/d1/l1", Value: []byte("level3")},
-				{Key: "prefix/d3/d2/d1/d1/d1", Value: []byte("level5")},
+func TestListRecursive(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		store    store.Store
+		expected map[string][]byte
+	}{
+		{
+			desc: "With unknown prefix",
+			store: &Mock{
+				Error: false,
+				KVPairs: []*store.KVPair{
+					{Key: "prefix/l1", Value: []byte("")},
+				},
+				WatchTreeMethod: nil,
+				ListError:       store.ErrKeyNotFound,
+			},
+			expected: map[string][]byte{},
+		},
+		{
+			desc: "recursive 5 levels",
+			store: &Mock{
+				KVPairs: []*store.KVPair{
+					{Key: "prefix/l1", Value: []byte("level1")},
+					{Key: "prefix/d1/l1", Value: []byte("level2")},
+					{Key: "prefix/d1/l2", Value: []byte("level2")},
+					{Key: "prefix/d2/d1/l1", Value: []byte("level3")},
+					{Key: "prefix/d3/d2/d1/d1/d1", Value: []byte("level5")},
+				},
+			},
+			expected: map[string][]byte{
+				"prefix/l1":             []byte("level1"),
+				"prefix/d1/l1":          []byte("level2"),
+				"prefix/d1/l2":          []byte("level2"),
+				"prefix/d2/d1/l1":       []byte("level3"),
+				"prefix/d3/d2/d1/d1/d1": []byte("level5"),
 			},
 		},
-		"prefix",
+		{
+			desc: "recursive empty",
+			store: &Mock{
+				KVPairs: []*store.KVPair{},
+			},
+			expected: map[string][]byte{},
+		},
+		{
+			desc: "same prefix",
+			store: &Mock{
+				KVPairs: []*store.KVPair{
+					{Key: "prefix", Value: []byte("")},
+					{Key: "prefix/tls", Value: []byte("")},
+					{Key: "prefix/tls/ca", Value: []byte("v1")},
+					{Key: "prefix/tls/caOptional", Value: []byte("v2")},
+					{Key: "otherprefix/tls/ca", Value: []byte("other")},
+				},
+			},
+			expected: map[string][]byte{
+				"prefix/tls/caOptional": []byte("v2"),
+				// missing the "prefix/tls/ca"
+			},
+		},
 	}
-	pairs := map[string][]byte{}
-	err := kv.ListRecursive(kv.Prefix, pairs)
-	require.NoError(t, err)
 
-	expected := map[string][]byte{
-		"prefix/l1":             []byte("level1"),
-		"prefix/d1/l1":          []byte("level2"),
-		"prefix/d1/l2":          []byte("level2"),
-		"prefix/d2/d1/l1":       []byte("level3"),
-		"prefix/d3/d2/d1/d1/d1": []byte("level5"),
+	for _, test := range testCases {
+		test := test
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+
+			kv := &KvSource{
+				Store:  test.store,
+				Prefix: "prefix",
+			}
+
+			pairs := map[string][]byte{}
+			err := kv.ListRecursive(kv.Prefix, pairs)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.expected, pairs)
+		})
 	}
-
-	assert.Exactly(t, expected, pairs)
 }
 
-func TestListRecursiveEmpty(t *testing.T) {
+func TestListRecursive_Error(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		store    store.Store
+		expected string
+	}{
+		{
+			desc: "get error",
+			store: &KvSource{
+				Store: &Mock{
+					GetError: errors.New("a GET error"),
+					KVPairs: []*store.KVPair{
+						{Key: "prefix/l1", Value: []byte("")},
+					},
+					WatchTreeMethod: nil,
+				},
+			},
+			expected: "a GET error",
+		},
+		{
+			desc: "list Error",
+			store: &Mock{
+				ListError: errors.New("another error"),
+				KVPairs: []*store.KVPair{
+					{Key: "prefix/l1", Value: []byte("")},
+				},
+				WatchTreeMethod: nil,
+			},
+			expected: "another error",
+		},
+	}
+
+	for _, test := range testCases {
+		test := test
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+
+			kv := &KvSource{Store: test.store, Prefix: "prefix"}
+
+			pairs := map[string][]byte{}
+			err := kv.ListRecursive(kv.Prefix, pairs)
+			assert.EqualError(t, err, test.expected)
+			assert.Len(t, pairs, 0)
+		})
+	}
+}
+
+func TestListValuedPairWithPrefix(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		store    store.Store
+		expected map[string][]byte
+	}{
+		{
+			desc: "with unknown prefix",
+			store: &Mock{
+				Error: false,
+				KVPairs: []*store.KVPair{
+					{Key: "prefix/l1", Value: []byte("")},
+				},
+				WatchTreeMethod: nil,
+				ListError:       store.ErrKeyNotFound,
+			},
+			expected: map[string][]byte{},
+		},
+		{
+			desc: "with prefix 5 levels",
+			store: &Mock{
+				KVPairs: []*store.KVPair{
+					{Key: "prefix/", Value: []byte("")},
+					{Key: "prefix/l1", Value: []byte("level1")},
+					{Key: "prefix/d1/l1", Value: []byte("level2")},
+					{Key: "prefix/d1/l2", Value: []byte("level2")},
+					{Key: "prefix/d2/d1/l1", Value: []byte("level3")},
+					{Key: "prefix/d3/d2/d1/d1/d1", Value: []byte("level5")},
+				},
+			},
+			expected: map[string][]byte{
+				"prefix/l1":             []byte("level1"),
+				"prefix/d1/l1":          []byte("level2"),
+				"prefix/d1/l2":          []byte("level2"),
+				"prefix/d2/d1/l1":       []byte("level3"),
+				"prefix/d3/d2/d1/d1/d1": []byte("level5"),
+			},
+		},
+		{
+			desc: "with prefix same prefix",
+			store: &Mock{
+				KVPairs: []*store.KVPair{
+					{Key: "prefix", Value: []byte("")},
+					{Key: "prefix/tls", Value: []byte("")},
+					{Key: "prefix/tls/ca", Value: []byte("v1")},
+					{Key: "prefix/tls/caOptional", Value: []byte("v2")},
+					{Key: "otherprefix/tls/ca", Value: []byte("other")},
+				},
+			},
+			expected: map[string][]byte{
+				"prefix/tls/ca":         []byte("v1"),
+				"prefix/tls/caOptional": []byte("v2"),
+			},
+		},
+		{
+			desc: "TestFetchValuedPairWithPrefixEmpty",
+			store: &Mock{
+				KVPairs: []*store.KVPair{},
+			},
+			expected: map[string][]byte{},
+		},
+	}
+
+	for _, test := range testCases {
+		test := test
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+
+			kv := &KvSource{
+				Store:  test.store,
+				Prefix: "prefix",
+			}
+
+			pairs, err := kv.ListValuedPairWithPrefix(kv.Prefix)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.expected, pairs)
+		})
+	}
+}
+
+func TestListValuedPairWithPrefix_Error(t *testing.T) {
 	kv := &KvSource{
 		&Mock{
-			KVPairs: []*store.KVPair{},
+			ListError: errors.New("another error"),
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/l1", Value: []byte("")},
+			},
+			WatchTreeMethod: nil,
 		},
 		"prefix",
 	}
 
-	pairs := map[string][]byte{}
-
-	err := kv.ListRecursive(kv.Prefix, pairs)
-	require.NoError(t, err)
-
-	expected := map[string][]byte{}
-
-	assert.Exactly(t, expected, pairs)
+	pairs, err := kv.ListValuedPairWithPrefix(kv.Prefix)
+	assert.NotNil(t, err)
+	assert.Len(t, pairs, 0)
 }
 
 func TestConvertPairs5Levels(t *testing.T) {

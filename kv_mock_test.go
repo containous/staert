@@ -12,10 +12,13 @@ type Mock struct {
 	Error           bool
 	KVPairs         []*store.KVPair
 	WatchTreeMethod func() <-chan []*store.KVPair
+	ListError       error
+	GetError        error
 }
 
 func (s *Mock) Put(key string, value []byte, opts *store.WriteOptions) error {
 	s.KVPairs = append(s.KVPairs, &store.KVPair{Key: key, Value: value, LastIndex: 0})
+
 	return nil
 }
 
@@ -23,6 +26,11 @@ func (s *Mock) Get(key string, options *store.ReadOptions) (*store.KVPair, error
 	if s.Error {
 		return nil, errors.New("error")
 	}
+
+	if s.GetError != nil {
+		return nil, s.GetError
+	}
+
 	for _, kvPair := range s.KVPairs {
 		if kvPair.Key == key {
 			return kvPair, nil
@@ -60,19 +68,17 @@ func (s *Mock) List(prefix string, options *store.ReadOptions) ([]*store.KVPair,
 	if s.Error {
 		return nil, errors.New("error")
 	}
+
 	var kv []*store.KVPair
 	for _, kvPair := range s.KVPairs {
-		if strings.HasPrefix(kvPair.Key, prefix+"/") {
-			if secondSlashIndex := strings.IndexRune(kvPair.Key[len(prefix)+1:], '/'); secondSlashIndex == -1 {
-				kv = append(kv, kvPair)
-			} else {
-				dir := &store.KVPair{
-					Key: kvPair.Key[:secondSlashIndex+len(prefix)+1],
-				}
-				kv = append(kv, dir)
-			}
+		if s.ListError != nil {
+			return nil, s.ListError
+		}
+		if strings.HasPrefix(kvPair.Key, prefix) && kvPair.Key != prefix {
+			kv = append(kv, kvPair)
 		}
 	}
+
 	return kv, nil
 }
 
