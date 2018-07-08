@@ -1,6 +1,7 @@
 package staert
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,7 +35,7 @@ func (ts *TomlSource) ConfigFileUsed() string {
 func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 	ts.fullPath = findFile(ts.filename, ts.dirNFullPath)
 	if len(ts.fullPath) < 2 {
-		return cmd, nil
+		return cmd, fmt.Errorf("unable to find config file on disk")
 	}
 
 	metadata, err := toml.DecodeFile(ts.fullPath, cmd.Config)
