@@ -31,10 +31,6 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/mitchellh/mapstructure"
-
-[[constraint]]
-  branch = "master"
   name = "github.com/abronan/valkeyrie"
 
 [[constraint]]
