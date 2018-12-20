@@ -214,7 +214,7 @@ func TestKvSourceEmpty(t *testing.T) {
 		Description:           "description test",
 		Config:                config,
 		DefaultPointersConfig: config,
-		Run: func() error { return nil },
+		Run:                   func() error { return nil },
 	}
 
 	s := NewStaert(rootCmd)
@@ -342,7 +342,7 @@ func TestParseKvSourceTrivial(t *testing.T) {
 		Description:           "description test",
 		Config:                &config,
 		DefaultPointersConfig: &config,
-		Run: func() error { return nil },
+		Run:                   func() error { return nil },
 	}
 
 	kv := &KvSource{
@@ -407,7 +407,7 @@ func TestParseKvSourceNestedPtrsNil(t *testing.T) {
 		Description:           "description test",
 		Config:                &config,
 		DefaultPointersConfig: &config,
-		Run: func() error { return nil },
+		Run:                   func() error { return nil },
 	}
 
 	kv := &KvSource{
@@ -448,7 +448,7 @@ func TestParseKvSourceMap(t *testing.T) {
 		Description:           "description test",
 		Config:                config,
 		DefaultPointersConfig: config,
-		Run: func() error { return nil },
+		Run:                   func() error { return nil },
 	}
 	kv := &KvSource{
 		&Mock{
@@ -633,13 +633,13 @@ func TestCollateKvPairsMapStructStructSouldFail(t *testing.T) {
 	}{
 		Vfoo: "toto",
 		Vother: map[Struct1]Struct1{
-			Struct1{
+			{
 				S1Bool: true,
 				S1Int:  1,
 			}: {
 				S1Int: 11,
 			},
-			Struct1{
+			{
 				S1Bool: true,
 				S1Int:  2,
 			}: {
@@ -1142,7 +1142,7 @@ func TestParseKvSourceCompressedData(t *testing.T) {
 		Description:           "description test",
 		Config:                &config,
 		DefaultPointersConfig: &config,
-		Run: func() error { return nil },
+		Run:                   func() error { return nil },
 	}
 
 	strToCompress := "Testing automatic compressed data if byte array"
