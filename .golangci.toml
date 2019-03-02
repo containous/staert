@@ -33,8 +33,11 @@
 [issues]
   exclude-use-default = false
   max-per-linter = 0
-  max-same = 0
-  exclude = [
-    "string `test` has 5 occurrences, make it a constant",
-    "cyclomatic complexity (\\d+) of func `(collateKvRecursive|decodeHook)` is high \\(> 12\\)",
-  ]
+  max-same-issues = 0
+  exclude = []
+  [[issues.exclude-rules]]
+    path = "kv_test.go"
+    text = "string `test` has 5 occurrences, make it a constant"
+  [[issues.exclude-rules]]
+    path = "kv.go"
+    text = "cyclomatic complexity (\\d+) of func `(collateKvRecursive|decodeHook)` is high"
