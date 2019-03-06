@@ -40,7 +40,16 @@ func (s *Mock) Get(key string, options *store.ReadOptions) (*store.KVPair, error
 }
 
 func (s *Mock) Delete(key string) error {
-	return errors.New("delete not supported")
+	pairs := make([]*store.KVPair, 0)
+	for _, pair := range s.KVPairs {
+		if pair.Key != key {
+			pairs = append(pairs, pair)
+		}
+	}
+
+	s.KVPairs = pairs
+
+	return nil
 }
 
 // Exists mock

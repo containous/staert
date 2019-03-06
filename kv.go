@@ -381,6 +381,34 @@ func (kv *KvSource) ListValuedPairWithPrefix(key string) (map[string][]byte, err
 	return pairs, nil
 }
 
+// ReplaceConfig will replace the existing config in the KV store with
+// the new config. Unused (stale) keys will be removed from the kv
+// store, while existing keys remain and get updated.
+func (kv *KvSource) ReplaceConfig(config interface{}) error {
+	existingConfigPairs, err := kv.ListValuedPairWithPrefix(kv.Prefix)
+
+	if err != nil {
+		return err
+	}
+
+	newConfigPairs := map[string]string{}
+	if err = collateKvRecursive(reflect.ValueOf(config), newConfigPairs, kv.Prefix); err != nil {
+		return err
+	}
+
+	// Loop over the keys in the store and remove the keys that are not present in the new config
+	for existingKey := range existingConfigPairs {
+		if _, ok := newConfigPairs[existingKey]; !ok {
+			err = kv.Delete(existingKey)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return kv.StoreConfig(config)
+}
+
 func convertPairs(pairs map[string][]byte) []*store.KVPair {
 	slicePairs := make([]*store.KVPair, len(pairs))
 	i := 0

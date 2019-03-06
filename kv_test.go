@@ -1238,3 +1238,74 @@ func TestDecodeHookCustomMarshaller(t *testing.T) {
 
 	assert.Exactly(t, data, output)
 }
+
+func TestReplaceConfig(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/foo", Value: []byte("foo")},
+				{Key: "prefix/bar/baz", Value: []byte("foo")},
+				{Key: "prefix/bar/boo", Value: []byte("foo")},
+			},
+			WatchTreeMethod: nil,
+		},
+		"prefix",
+	}
+
+	config := &struct {
+		Foo string
+	}{
+		Foo: "bar",
+	}
+
+	err := kv.ReplaceConfig(config)
+	require.NoError(t, err)
+
+	results, err := kv.ListValuedPairWithPrefix("prefix")
+	require.NoError(t, err)
+
+	require.EqualValues(t, map[string][]byte{
+		"prefix/foo": []byte("bar"),
+	}, results)
+}
+
+func TestReplaceNestedConfig(t *testing.T) {
+	kv := &KvSource{
+		&Mock{
+			KVPairs: []*store.KVPair{
+				{Key: "prefix/foo", Value: []byte("foo")},
+				{Key: "prefix/bar/baz", Value: []byte("foo")},
+				{Key: "prefix/bar/boo", Value: []byte("foo")},
+				{Key: "prefix/bar/far/baz", Value: []byte("foo")},
+			},
+			WatchTreeMethod: nil,
+		},
+		"prefix",
+	}
+
+	config := &struct {
+		Foo string
+		Bar map[string]map[string]string
+		New string
+	}{
+		Foo: "bar",
+		Bar: map[string]map[string]string{
+			"far": {
+				"baz": "faz",
+			},
+		},
+		New: "foo",
+	}
+
+	err := kv.ReplaceConfig(config)
+	require.NoError(t, err)
+
+	results, err := kv.ListValuedPairWithPrefix("prefix")
+	require.NoError(t, err)
+
+	require.EqualValues(t, map[string][]byte{
+		"prefix/foo":         []byte("bar"),
+		"prefix/bar/far/baz": []byte("faz"),
+		"prefix/new":         []byte("foo"),
+	}, results)
+}
