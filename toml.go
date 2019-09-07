@@ -65,8 +65,7 @@ func (ts *TomlSource) Parse(cmd *flaeg.Command) (*flaeg.Command, error) {
 }
 
 func preProcessDir(dirIn string) (string, error) {
-	expanded := os.ExpandEnv(dirIn)
-	return filepath.Abs(expanded)
+	return filepath.Abs(os.ExpandEnv(dirIn))
 }
 
 func findFile(filename string, dirNFile []string) string {

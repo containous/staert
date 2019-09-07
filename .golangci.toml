@@ -28,6 +28,7 @@
     "gas",
     "dupl",
     "prealloc",
+    "typecheck", # v1.17.1 and Go1.13 => bug
   ]
 
 [issues]
