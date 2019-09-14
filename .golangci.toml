@@ -20,6 +20,10 @@
   [linters-settings.misspell]
     locale = "US"
 
+  [linters-settings.funlen]
+    lines = 90 # default 60
+    statements = 50 # default 40
+
 [linters]
   enable-all = true
   disable = [
