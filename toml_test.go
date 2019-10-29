@@ -71,8 +71,8 @@ func TestTomlSource_Parse_FileNotFound(t *testing.T) {
 	}
 
 	command, err := src.Parse(cmd)
-	require.NoError(t, err)
 
+	assert.Error(t, err, "unable to find config file on disk")
 	assert.Exactly(t, cmd, command)
 }
 
